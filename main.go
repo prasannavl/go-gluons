@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,8 @@ import (
 
 	"encoding/json"
 	"fmt"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -80,7 +83,18 @@ func main() {
 	http.HandleFunc("/", r)
 
 	server := &http.Server{Addr: addr, Handler: http.DefaultServeMux}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	go func() {
+		for sig := range quit {
+			log.Printf("Signal: %q", sig)
+			log.Printf("Shutting down..")
+			server.Shutdown(context.Background())
+		}
+	}()
+
 	var _ = server.ListenAndServe()
-	log.Println("Exit")
-	time.Sleep(3 * time.Second)
+	log.Println("Shutdown: Success")
 }
