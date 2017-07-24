@@ -6,10 +6,11 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd ${dir}
 
 binary_name="nextfirst-core"
-dest_path="${HOME}/workspace/bin/"
+dest_dir="${HOME}/workspace/bin/"
+logs_dir="${HOME}/workspace/logs/"
 
-set +e
 # Build
+set +e
 go get -u github.com/golang/dep/cmd/dep && dep ensure
 go build -o ./bin/nextfirst-core
 
@@ -18,9 +19,10 @@ if [ $ret_val -ne 0 ]; then
     exit $ret_val
 fi
 
-set -e
 # Deploy
-mkdir -p "$dest_path"
+set -e
+mkdir -p "$dest_dir"
+mkdir -p "$logs_dir"
 
 wait_for_process_briefly(){
     local pid=$(pidof "$@")
@@ -34,7 +36,10 @@ wait_for_process_briefly(){
 }
 
 wait_for_process_briefly "$binary_name"
-mv -f "./bin/${binary_name}" "$dest_path"
-binary_path="${dest_path}/${binary_name}"
+mv -f "./bin/${binary_name}" "$dest_dir"
+
+# Run
+cd ${dest_dir}
+binary_path="${dest_dir}/${binary_name}"
 sudo setcap cap_net_bind_service=+ep "$binary_path"
-nohup "$binary_path" address=":80" &
+nohup "$binary_path" address=":80" &>> "${logs_dir}/${binary_name}-run.log" &
