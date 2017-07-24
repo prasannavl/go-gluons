@@ -40,7 +40,6 @@ func createLogStream(logFile *string, overwriteLog bool) io.WriteCloser {
 	return file
 }
 
-//go:generate echo Hello, Go Generate!
 func main() {
 	var addr string
 	var logFile string
