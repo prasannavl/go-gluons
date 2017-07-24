@@ -10,17 +10,26 @@ dest_dir="${HOME}/workspace/bin/"
 logs_dir="${HOME}/workspace/logs/"
 
 # Build
+
 set +e
-go get -u github.com/golang/dep/cmd/dep && dep ensure
+echo "> build: start"
+
+go get -u github.com/golang/dep/cmd/dep
+dep ensure
 go build -o ./bin/nextfirst-core
 
 ret_val=$?
 if [ $ret_val -ne 0 ]; then
+    echo "> build: fail"    
     exit $ret_val
 fi
 
+echo "> build: success"
+
 # Deploy
+
 set -e
+echo "> deploy: start"
 mkdir -p "$dest_dir"
 mkdir -p "$logs_dir"
 
@@ -37,9 +46,13 @@ wait_for_process_briefly(){
 
 wait_for_process_briefly "$binary_name"
 mv -f "./bin/${binary_name}" "$dest_dir"
+echo "> deploy: success"
 
 # Run
+
+echo "> run: start"
 cd ${dest_dir}
 binary_path="${dest_dir}/${binary_name}"
 sudo setcap cap_net_bind_service=+ep "$binary_path"
 nohup "$binary_path" address=":80" &>> "${logs_dir}/${binary_name}-run.log" &
+echo "> run: success"
