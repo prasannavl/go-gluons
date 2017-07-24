@@ -36,12 +36,13 @@ start() {
     mkdir -p "$logs_dir"
     binary_path="${deploy_dir}/${binary_name}"
     sudo setcap cap_net_bind_service=+ep "$binary_path"
-    nohup "$binary_path address=':80'" &>> "${logs_dir}/${binary_name}-run.log" &
+    local log_file="${logs_dir}/${binary_name}-run.log"
+    nohup "$binary_path" -address=":80" &>> $log_file &
     echo "> run: success"
 }
 
 wait_for_process_briefly(){
-    local pid=$(pidof "$1" || "")
+    local pid=$(pidof "$1" || false)
     if [ -z "$pid" ]; then return; fi;
     local d=$(($2*10))
     echo "> deploy: waiting for previous shutdown.. (max: ${d}s)"
