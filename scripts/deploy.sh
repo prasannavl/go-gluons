@@ -35,4 +35,6 @@ wait_for_process_briefly(){
 
 wait_for_process_briefly "$binary_name"
 mv -f "./bin/${binary_name}" "$dest_path"
-nohup "${dest_path}/${binary_name}"
+binary_path="${dest_path}/${binary_name}"
+sudo setcap cap_net_bind_service=+ep "$binary_path"
+nohup "$binary_path" address=":80" &
