@@ -6,7 +6,7 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd ${dir}
 
 binary_name="nextfirst-core"
-dest_path="~/workspace/bin/"
+dest_path="${HOME}/workspace/bin/"
 
 set +e
 # Build
