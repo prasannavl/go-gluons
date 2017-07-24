@@ -14,7 +14,7 @@ logs_dir="${HOME}/workspace/logs/"
 set +e
 echo "> build: start"
 
-go get -u github.com/golang/dep/cmd/dep
+go get -v -u github.com/golang/dep/cmd/dep
 dep ensure
 go build -o ./bin/nextfirst-core
 
