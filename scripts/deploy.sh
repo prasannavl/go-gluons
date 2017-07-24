@@ -26,7 +26,7 @@ build() {
 deploy() {
     echo "> deploy: start"
     mkdir -p "$deploy_dir"
-    wait_for_process_briefly "$binary_name"
+    wait_for_process_briefly "$binary_name" 90
     mv -f "./bin/${binary_name}" "$deploy_dir"
     echo "> deploy: success"
 }
@@ -41,10 +41,10 @@ start() {
 }
 
 wait_for_process_briefly(){
-    local pid=$(pidof "$@" || "")
+    local pid=$(pidof "$1" || "")
     if [ -z "$pid" ]; then return; fi;
-    local d=900
-    echo "> deploy: waiting for previous shutdown.. (max:${$((d/10))}s)"
+    local d=$(($2*10))
+    echo "> deploy: waiting for previous shutdown.. (max: ${d}s)"
     local i=0
     while kill -0 "$pid"; do
         sleep 0.1s
