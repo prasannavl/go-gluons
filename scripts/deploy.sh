@@ -18,8 +18,9 @@ main() {
 
 build() {
     echo "> build: start"
-    go get -v -u github.com/golang/dep/cmd/dep || true
-    dep ensure || true
+    # go get -v -u github.com/golang/dep/cmd/dep || true
+    # dep ensure || true
+    go get
     go build -o "./bin/${binary_name}"
     echo "> build: success"
 }
