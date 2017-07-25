@@ -6,12 +6,13 @@ deploy_dir="${HOME}/workspace/bin/"
 logs_dir="${HOME}/workspace/logs/"
 
 main() {
+    trap "echo '> script: incomplete termination requested'" TERM   
     set -e
     local dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"    
     cd ${dir}
     build
     deploy
-    cd ${deploy_dir}    
+    cd ${deploy_dir}
     start
 }
 
@@ -26,7 +27,7 @@ build() {
 deploy() {
     echo "> deploy: start"
     mkdir -p "$deploy_dir"
-    wait_for_process_briefly "$binary_name" 90
+    graceful_exit_or_kill "$binary_name" 90
     mv -f "./bin/${binary_name}" "$deploy_dir"
     echo "> deploy: success"
 }
@@ -41,16 +42,20 @@ start() {
     echo "> run: success"
 }
 
-wait_for_process_briefly(){
+graceful_exit_or_kill() {
     local pid=$(pidof "$1" || false)
     if [ -z "$pid" ]; then return; fi;
     local d=$(($2*10))
     echo "> deploy: waiting for previous shutdown.. (max: ${2}s)"
     local i=0
-    while kill -0 "$pid"; do
+    while kill "$pid"; do
         sleep 0.1s
         i=$((i+1))
-        if [ $i -gt $d ]; then kill -9 "$pid" || true; fi;
+        if [ $i -gt $d ]; then 
+            echo "> deploy: forceful termation"
+            kill -9 "$pid" || true;
+            break
+        fi;
     done
 }
 
