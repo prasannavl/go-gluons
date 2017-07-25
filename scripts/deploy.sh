@@ -20,7 +20,7 @@ build() {
     echo "> build: start"
     # go get -v -u github.com/golang/dep/cmd/dep || true
     # dep ensure || true
-    go get
+    go get -d -v || true
     go build -o "./bin/${binary_name}"
     echo "> build: success"
 }
