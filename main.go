@@ -73,7 +73,7 @@ func handler(addr string) http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("labs.prasannavl.com/", NewHandler("PVL Labs"))
 	m.HandleFunc(addr+"/", NewHandler(addr))
-	m.HandleFunc("nf.prasannavl.com/", NewHandler("NextFirst API"))
+	m.HandleFunc("nf.statwick.com/", NewHandler("NextFirst API"))
 	return m
 }
 
