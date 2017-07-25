@@ -45,7 +45,7 @@ wait_for_process_briefly(){
     local pid=$(pidof "$1" || false)
     if [ -z "$pid" ]; then return; fi;
     local d=$(($2*10))
-    echo "> deploy: waiting for previous shutdown.. (max: ${d}s)"
+    echo "> deploy: waiting for previous shutdown.. (max: ${2}s)"
     local i=0
     while kill -0 "$pid"; do
         sleep 0.1s
