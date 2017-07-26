@@ -56,12 +56,12 @@ graceful_exit_or_kill() {
     local d=$(($2*10))
     echo "> deploy: waiting for previous shutdown.. (max: ${2}s)"
     local i=0
-    while kill "$pid" >> /dev/null; do
+    while kill "$pid" &>> /dev/null; do
         sleep 0.1s
         i=$((i+1))
         if [ $i -gt $d ]; then 
             echo "> deploy: forceful termation"
-            kill -9 "$pid" >> /dev/null || true;
+            kill -9 "$pid" &>> /dev/null || true;
             break
         fi;
     done
