@@ -11,6 +11,7 @@ main() {
     local dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"    
     cd ${dir}
     build
+    test_build
     deploy
     cd ${deploy_dir}
     start
@@ -22,7 +23,15 @@ build() {
     # dep ensure || true
     go get -d -v || true
     go build -o "./bin/${binary_name}"
-    echo "> build: success"
+    echo "> build: done"
+}
+
+test_build() {
+    echo "> test: start"
+    # go test
+    go test -bench=. > ./test.log
+    cat ./test.log | grep.exe "ns/op"
+    echo "> test: done"
 }
 
 deploy() {
@@ -30,7 +39,7 @@ deploy() {
     mkdir -p "$deploy_dir"
     graceful_exit_or_kill "$binary_name" 90
     mv -f "./bin/${binary_name}" "$deploy_dir"
-    echo "> deploy: success"
+    echo "> deploy: done"
 }
 
 start() {
@@ -40,7 +49,7 @@ start() {
     sudo setcap cap_net_bind_service=+ep "$binary_path"
     local log_file="${logs_dir}/${binary_name}-run.log"
     nohup "$binary_path" -address=":80" &>> $log_file &
-    echo "> run: success"
+    echo "> run: done"
 }
 
 graceful_exit_or_kill() {
@@ -49,12 +58,12 @@ graceful_exit_or_kill() {
     local d=$(($2*10))
     echo "> deploy: waiting for previous shutdown.. (max: ${2}s)"
     local i=0
-    while kill "$pid"; do
+    while kill "$pid" >> /dev/null; do
         sleep 0.1s
         i=$((i+1))
         if [ $i -gt $d ]; then 
             echo "> deploy: forceful termation"
-            kill -9 "$pid" || true;
+            kill -9 "$pid" >> /dev/null || true;
             break
         fi;
     done

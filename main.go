@@ -13,11 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
-
-type httpHandler func(http.ResponseWriter, *http.Request)
 
 func main() {
 	var addr string
@@ -52,9 +49,8 @@ func main() {
 	runServer(addr, handler(addr))
 }
 
-func NewHandler(host string) httpHandler {
-	r := chi.NewRouter()
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+func NewHandlerFunc(host string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		data := struct {
 			Message string
@@ -65,15 +61,14 @@ func NewHandler(host string) httpHandler {
 		}
 
 		render.JSON(w, r, &data)
-	})
-	return r.ServeHTTP
+	}
 }
 
 func handler(addr string) http.Handler {
 	m := http.NewServeMux()
-	m.HandleFunc("labs.prasannavl.com/", NewHandler("PVL Labs"))
-	m.HandleFunc(addr+"/", NewHandler(addr))
-	m.HandleFunc("nf.statwick.com/", NewHandler("NextFirst API"))
+	m.HandleFunc("labs.prasannavl.com/", NewHandlerFunc("PVL Labs"))
+	m.HandleFunc(addr+"/", NewHandlerFunc(addr))
+	m.HandleFunc("nf.statwick.com/", NewHandlerFunc("NextFirst API"))
 	return m
 }
 
