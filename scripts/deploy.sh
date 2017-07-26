@@ -28,8 +28,7 @@ build() {
 
 test_build() {
     echo "> test: start"
-    go test -bench=. &> "test.log"
-    cat ./test.log | grep "ns/op"
+    go test
     echo "> test: done"
 }
 
