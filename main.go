@@ -10,9 +10,6 @@ import (
 	"fmt"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/go-chi/render"
 )
 
 func main() {
@@ -44,24 +41,11 @@ func main() {
 	runServer(addr, handler(addr))
 }
 
-func NewHandlerFunc(host string) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		data := struct {
-			Message string
-			Date    time.Time
-		}{
-			fmt.Sprintf("Hello world from %s", host),
-			time.Now(),
-		}
-		render.JSON(w, r, &data)
-	}
-}
-
 func handler(addr string) http.Handler {
 	m := http.NewServeMux()
-	m.HandleFunc("labs.prasannavl.com/", NewHandlerFunc("PVL Labs"))
-	m.HandleFunc(addr+"/", NewHandlerFunc(addr))
-	m.HandleFunc("nf.statwick.com/", NewHandlerFunc("NextFirst API"))
+	m.HandleFunc("labs.prasannavl.com/", NewHandlerFunc("PVL Labs", nil))
+	m.HandleFunc(addr+"/", NewHandlerFunc(addr, nil))
+	m.HandleFunc("nf.statwick.com/", NewHandlerFunc("NextFirst API", nil))
 	return m
 }
 
