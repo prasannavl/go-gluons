@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/render"
 )
 
+// Services is the global services context
 type Services struct {
 	log *log.Logger
 }
