@@ -20,6 +20,10 @@ func NewHandlerFunc(host string, logger *log.Logger) func(http.ResponseWriter, *
 	var _ = services
 
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		requestServices := services
+		var _ = requestServices
+
 		data := struct {
 			Message string
 			Date    time.Time
