@@ -36,7 +36,7 @@ func main() {
 	defer logStream.Close()
 	log.SetOutput(logStream)
 
-	log.Printf("Listen address: %s", addr)
+	log.Printf("listen address: %s", addr)
 
 	runServer(addr, handler(addr))
 }
@@ -57,16 +57,16 @@ func runServer(addr string, handler http.Handler) {
 
 	go func() {
 		for sig := range quit {
-			log.Printf("Signal: %q", sig)
-			log.Printf("Shutting down..")
+			log.Printf("signal: %q", sig)
+			log.Printf("shutting down..")
 			server.Shutdown(context.Background())
 		}
 	}()
 
-	log.Println("Listening..")
+	log.Println("listening..")
 	err := server.ListenAndServe()
 	if err != http.ErrServerClosed {
-		log.Fatalf("Fatal: %v", err)
+		log.Fatalf("fatal: %v", err)
 	}
-	log.Println("Exit: Success")
+	log.Println("exit: ok")
 }
