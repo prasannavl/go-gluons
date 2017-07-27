@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -36,22 +35,17 @@ func main() {
 	flag.BoolVar(&logDisable, "log-disable", false, "disable the logger")
 	flag.Parse()
 
-	log.Printf("Listen address: %s", addr)
+	logStream := CreateLogStream(&logFile, logOverwrite, logDisable, debugMode)
+	defer logStream.Close()
+	log.SetOutput(logStream)
 
-	if logDisable {
-		log.SetOutput(ioutil.Discard)
-	} else {
-		logWriter := CreateLogStream(&logFile, logOverwrite)
-		defer logWriter.Close()
-		log.SetOutput(logWriter)
-	}
+	log.Printf("Listen address: %s", addr)
 
 	runServer(addr, handler(addr))
 }
 
 func NewHandlerFunc(host string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		data := struct {
 			Message string
 			Date    time.Time
@@ -59,7 +53,6 @@ func NewHandlerFunc(host string) func(http.ResponseWriter, *http.Request) {
 			fmt.Sprintf("Hello world from %s", host),
 			time.Now(),
 		}
-
 		render.JSON(w, r, &data)
 	}
 }
