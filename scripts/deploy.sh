@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 ## Author: Prasanna V. Loganathar
 
-binary_name="nextfirst-core"
-deploy_dir="${HOME}/workspace/bin/"
-logs_dir="${HOME}/workspace/logs/"
+binary_name="api-core"
+deploy_dir="${HOME}/run/bin/"
+logs_dir="${HOME}/run/logs/"
+
+build_target="./bin/${binary_name}"
 
 main() {
     trap "echo '> script: incomplete termination requested'" TERM   
@@ -22,7 +24,7 @@ build() {
     # go get -v -u github.com/golang/dep/cmd/dep || true
     # dep ensure || true
     go get -d -v || true
-    go build -o "./bin/${binary_name}"
+    go build -o "${build_target}"
     echo "> build: done"
 }
 
@@ -36,7 +38,7 @@ deploy() {
     echo "> deploy: start"
     mkdir -p "$deploy_dir"
     graceful_exit_or_kill "$binary_name" 90
-    mv -f "./bin/${binary_name}" "$deploy_dir"
+    mv -f "${build_target}" "$deploy_dir"
     echo "> deploy: done"
 }
 
@@ -45,8 +47,9 @@ start() {
     mkdir -p "$logs_dir"
     binary_path="${deploy_dir}/${binary_name}"
     sudo setcap cap_net_bind_service=+ep "$binary_path"
-    local log_file="${logs_dir}/${binary_name}-run.log"
-    nohup "$binary_path" -address=":80" &>> $log_file &
+    local log_file_exec="${logs_dir}/${binary_name}-exec.log"
+    local log_file="${logs_dir}/${binary_name}.log"
+    nohup "$binary_path" --address=":80" --log-file="${log_file}" &>> $log_file_exec &
     echo "> run: done"
 }
 

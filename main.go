@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"net/http"
 	"os"
+
+	flag "github.com/spf13/pflag"
 
 	"fmt"
 	"os/signal"
@@ -16,7 +17,7 @@ func main() {
 	var addr string
 	var logFile string
 	var logOverwrite bool
-	var logDisable bool
+	var logDisabled bool
 	var debugMode bool
 
 	flag.Usage = func() {
@@ -26,27 +27,19 @@ func main() {
 	}
 
 	flag.BoolVar(&debugMode, "debug", false, "debug mode")
-	flag.StringVar(&addr, "address", "localhost:8000", "the `address:port` for the service to listen on")
-	flag.StringVar(&logFile, "log", "", "the log file destination")
+	flag.StringVarP(&addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
+	flag.StringVar(&logFile, "log-file", "", "the log file destination")
 	flag.BoolVar(&logOverwrite, "log-overwrite", false, "overwrite the log file if set, or appends")
-	flag.BoolVar(&logDisable, "log-disable", false, "disable the logger")
+	flag.BoolVar(&logDisabled, "log-off", false, "disable the logger")
 	flag.Parse()
 
-	logStream := CreateLogStream(&logFile, logOverwrite, logDisable, debugMode)
+	logStream := CreateLogStream(&logFile, logOverwrite, logDisabled, debugMode)
 	defer logStream.Close()
 	log.SetOutput(logStream)
 
 	log.Printf("listen address: %s", addr)
 
-	runServer(addr, handler(addr))
-}
-
-func handler(addr string) http.Handler {
-	m := http.NewServeMux()
-	m.HandleFunc("labs.prasannavl.com/", NewHandlerFunc("PVL Labs", nil))
-	m.HandleFunc(addr+"/", NewHandlerFunc(addr, nil))
-	m.HandleFunc("nf.statwick.com/", NewHandlerFunc("NextFirst API", nil))
-	return m
+	runServer(addr, NewApp(addr))
 }
 
 func runServer(addr string, handler http.Handler) {
