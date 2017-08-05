@@ -46,9 +46,9 @@ func createLogStream(logFile *string, truncate bool, disabled bool, debugMode bo
 	}
 	var flag int
 	if truncate {
-		flag = os.O_CREATE | os.O_TRUNC
+		flag = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	} else {
-		flag = os.O_CREATE | os.O_APPEND
+		flag = os.O_CREATE | os.O_APPEND | os.O_WRONLY
 	}
 	file, err := os.OpenFile(fileName, flag, os.FileMode(0644))
 	if err != nil {
