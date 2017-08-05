@@ -50,7 +50,7 @@ func createLogStream(logFile *string, truncate bool, disabled bool, debugMode bo
 	} else {
 		flag = os.O_CREATE | os.O_APPEND
 	}
-	file, err := os.OpenFile(fileName, flag, 0)
+	file, err := os.OpenFile(fileName, flag, os.ModePerm)
 	if err != nil {
 		log.Println(err.Error())
 		return os.Stderr, nil
