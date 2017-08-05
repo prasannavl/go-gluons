@@ -10,6 +10,10 @@ build_target="./bin/${binary_name}"
 main() {
     trap "echo '> script: incomplete termination requested'" TERM   
     set -e
+    if [[ $# -gt 0 ]]; then
+        eval "${@:1}"
+        exit 0;
+    fi;
     local dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"    
     cd ${dir}
     build
@@ -43,6 +47,7 @@ deploy() {
 }
 
 start() {
+    graceful_exit_or_kill "$binary_name" 90
     echo "> run: start"
     mkdir -p "$logs_dir"
     binary_path="${deploy_dir}/${binary_name}"
@@ -70,4 +75,4 @@ graceful_exit_or_kill() {
     done
 }
 
-main $@
+main "$@"
