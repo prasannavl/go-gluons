@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ## Author: Prasanna V. Loganathar
 
-binary_name="api-core"
+binary_name="apicore"
 deploy_dir="${HOME}/run/bin/"
 logs_dir="${HOME}/run/logs/"
 

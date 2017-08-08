@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"nextfirst/nf-core/appcontext"
+	"pvl/api-core/appcontext"
 )
 
 type User struct {

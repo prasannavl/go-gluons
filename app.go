@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"pvl/apicore/appcontext"
+	"pvl/apicore/middleware"
 	"time"
 
-	"pvl/api-core/middleware"
+	"go.uber.org/zap"
 
 	"github.com/go-chi/render"
 	"github.com/prasannavl/mchain"
@@ -20,7 +22,6 @@ func NewApp(addr string) http.Handler {
 }
 
 func newAppHandler(host string) http.Handler {
-	// c := appcontext.AppContext{Services: appcontext.Services{}}
 	return mchain.NewBuilder(
 		middleware.RequestContextInitHandler,
 		middleware.RequestLogHandler,
@@ -42,4 +43,10 @@ func CreateActionHandler(host string) mchain.Handler {
 		return nil
 	}
 	return mchain.HandlerFunc(f)
+}
+
+func createAppContext(logger *zap.Logger) *appcontext.AppContext {
+	services := appcontext.Services{Logger: logger}
+	c := appcontext.AppContext{Services: services}
+	return &c
 }
