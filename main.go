@@ -7,6 +7,7 @@ import (
 	"pvl/apicore/appcontext"
 	"pvl/apicore/logger"
 	"pvl/apicore/platform"
+	"time"
 
 	flag "github.com/spf13/pflag"
 
@@ -42,13 +43,18 @@ func main() {
 
 	log.Info("args", zap.String("listen-address", addr))
 
-	context := createAppContext(log)
-	runServer(context, addr, NewApp(addr))
+	context := createAppContext(log, addr)
+	runServer(context, NewApp(context))
 }
 
-func runServer(c *appcontext.AppContext, addr string, handler http.Handler) {
+func runServer(c *appcontext.AppContext, handler http.Handler) {
 	log := c.Services.Logger
-	server := &http.Server{Addr: addr, Handler: handler}
+	server := &http.Server{
+		Addr:           c.ServerAddress,
+		Handler:        handler,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

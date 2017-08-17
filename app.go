@@ -13,15 +13,15 @@ import (
 	"github.com/prasannavl/mchain"
 )
 
-func NewApp(addr string) http.Handler {
+func NewApp(context *appcontext.AppContext) http.Handler {
 	m := http.NewServeMux()
-	m.Handle("labs.prasannavl.com/", newAppHandler("PVL Labs"))
-	m.Handle(addr+"/", newAppHandler(addr))
-	m.Handle("nf.statwick.com/", newAppHandler("NextFirst API"))
+	m.Handle("labs.prasannavl.com/", newAppHandler(context, "PVL Labs"))
+	m.Handle(context.ServerAddress+"/", newAppHandler(context, context.ServerAddress))
+	m.Handle("nf.statwick.com/", newAppHandler(context, "NextFirst API"))
 	return http.Handler(m)
 }
 
-func newAppHandler(host string) http.Handler {
+func newAppHandler(c *appcontext.AppContext, host string) http.Handler {
 	return mchain.NewBuilder(
 		middleware.RequestContextInitHandler,
 		middleware.RequestLogHandler,
@@ -45,8 +45,8 @@ func CreateActionHandler(host string) mchain.Handler {
 	return mchain.HandlerFunc(f)
 }
 
-func createAppContext(logger *zap.Logger) *appcontext.AppContext {
+func createAppContext(logger *zap.Logger, addr string) *appcontext.AppContext {
 	services := appcontext.Services{Logger: logger}
-	c := appcontext.AppContext{Services: services}
+	c := appcontext.AppContext{Services: services, ServerAddress: addr}
 	return &c
 }
