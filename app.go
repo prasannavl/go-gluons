@@ -15,9 +15,7 @@ import (
 
 func NewApp(context *appcontext.AppContext) http.Handler {
 	m := http.NewServeMux()
-	m.Handle("labs.prasannavl.com/", newAppHandler(context, "PVL Labs"))
 	m.Handle(context.ServerAddress+"/", newAppHandler(context, context.ServerAddress))
-	m.Handle("nf.statwick.com/", newAppHandler(context, "NextFirst API"))
 	return http.Handler(m)
 }
 
