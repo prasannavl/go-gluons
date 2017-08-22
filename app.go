@@ -15,7 +15,7 @@ import (
 
 func NewApp(context *appcontext.AppContext) http.Handler {
 	m := http.NewServeMux()
-	m.Handle(context.ServerAddress+"/", newAppHandler(context, context.ServerAddress))
+	m.Handle("/", newAppHandler(context, context.ServerAddress))
 	return http.Handler(m)
 }
 
@@ -25,7 +25,9 @@ func newAppHandler(c *appcontext.AppContext, host string) http.Handler {
 		middleware.RequestLogHandler,
 		middleware.RequestDurationHandler,
 		middleware.RequestIDMustInitHandler,
-	).Handler(CreateActionHandler(host)).BuildHttp(nil)
+	).Handler(CreateActionHandler(host)).BuildHttp(func(err error) {
+		c.Logger.Error("unhandled", zap.Error(err))
+	})
 }
 
 func CreateActionHandler(host string) mchain.Handler {

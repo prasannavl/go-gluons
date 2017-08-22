@@ -1,14 +1,14 @@
 package platform
 
 import (
-	"runtime"
 	"syscall"
 )
 
-func SetupVirtualTerminal() {
-	if runtime.GOOS != "windows" {
-		return
-	}
+func Init() {
+	setupVirtualTerminal()
+}
+
+func setupVirtualTerminal() {
 	kernel32 := syscall.MustLoadDLL("kernel32.dll")
 	getConsoleWindow := kernel32.MustFindProc("GetConsoleWindow")
 	setConsoleMode := kernel32.MustFindProc("SetConsoleMode")

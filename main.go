@@ -24,7 +24,7 @@ func main() {
 	var logDisabled bool
 	var debugMode bool
 
-	platform.SetupVirtualTerminal()
+	platform.Init()
 
 	flag.Usage = func() {
 		fmt.Printf("\nUsage: [opts]\n\nOptions:\n")
@@ -43,8 +43,8 @@ func main() {
 
 	log.Info("args", zap.String("listen-address", addr))
 
-	context := createAppContext(log, addr)
-	runServer(context, NewApp(context))
+	c := createAppContext(log, addr)
+	runServer(c, NewApp(c))
 }
 
 func runServer(c *appcontext.AppContext, handler http.Handler) {
