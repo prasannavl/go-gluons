@@ -6,8 +6,6 @@ import (
 
 type Level uint
 
-const maxUInt = ^uint(0)
-
 const (
 	_                = 0
 	ErrorLevel Level = 1 << (iota - 1)
@@ -142,7 +140,7 @@ func (l Logger) Flush() {
 }
 
 func (l Logger) WithContext(name string, value interface{}) Logger {
-	cx := append(g.ctx, Item{name, value})
+	cx := append(l.ctx, Item{name, value})
 	return Logger{g.recorder, cx}
 }
 
