@@ -8,7 +8,6 @@ import (
 )
 
 func TestPrint(t *testing.T) {
-
 	rec := log.CreateMultiRecorder(
 		&log.LeveledRecorder{
 			MaxLevel: log.InfoLevel,
@@ -32,5 +31,6 @@ func TestPrint(t *testing.T) {
 
 	l := log.WithContext("ctxName", "some val")
 	l.Info("hello there!!")
+	l.WithContext("ctx2", "another val").Info("Hey you")
 	l.Infof("%s %v", "hello there", "again")
 }
