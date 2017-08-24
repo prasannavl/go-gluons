@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prasannavl/go-gb/log"
+	"github.com/prasannavl/go-grab/log"
 )
 
 func TestPrint(t *testing.T) {

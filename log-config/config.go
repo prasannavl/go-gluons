@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/prasannavl/go-gb/log"
+	"github.com/prasannavl/go-grab/log"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
