@@ -9,9 +9,18 @@ import (
 	"github.com/fatih/color"
 )
 
+var initTime = time.Now()
+
 func DefaultTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
-	buf.WriteString(r.Meta.Time.Format("03:04:05 (Jan 02)"))
+	var timeFormat string
+	t := r.Meta.Time
+	if t.Sub(initTime).Hours() > 24 {
+		timeFormat = "03:04:05 (Jan 02)"
+	} else {
+		timeFormat = "03:04:05"
+	}
+	buf.WriteString(color.HiBlackString(t.Format(timeFormat)))
 	buf.WriteString("  " + GetLogLevelString(r.Meta.Level) + "  ")
 	args := r.Args
 	if r.Format == "" {
@@ -30,7 +39,14 @@ func DefaultTextFormatterForHuman(r *Record) string {
 
 func DefaultColorTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
-	buf.WriteString(color.HiBlackString(r.Meta.Time.Format("03:04:05 (Jan 02)")))
+	t := r.Meta.Time
+	var timeFormat string
+	if t.Sub(initTime).Hours() > 24 {
+		timeFormat = "03:04:05 (Jan 02)"
+	} else {
+		timeFormat = "03:04:05"
+	}
+	buf.WriteString(color.HiBlackString(t.Format(timeFormat)))
 	buf.WriteString("  " + GetLogLevelColoredString(r.Meta.Level) + "  ")
 	args := r.Args
 	if r.Format == "" {
