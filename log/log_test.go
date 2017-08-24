@@ -18,7 +18,8 @@ func TestPrint(t *testing.T) {
 		},
 	)
 
-	log.SetGlobal(rec)
+	l := log.New(rec)
+	log.SetGlobal(l)
 
 	log.Info("Hello there 1")
 	log.Warn("Hello there 2")
@@ -29,8 +30,8 @@ func TestPrint(t *testing.T) {
 	log.Infof("%s", "Hey you X")
 	log.Warnf("%s %q %v", "Hey", "you", "Y")
 
-	l := log.WithContext("ctxName", "some val")
-	l.Info("hello there!!")
-	l.WithContext("ctx2", "another val").Info("Hey you")
-	l.Infof("%s %v", "hello there", "again")
+	l2 := log.WithContext("ctxName", "some val")
+	l2.Info("hello there!!")
+	l2.WithContext("ctx2", "another val").Info("Hey you")
+	l2.Infof("%s %v", "hello there", "again")
 }
