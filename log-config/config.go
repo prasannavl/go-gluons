@@ -28,7 +28,7 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		VerbosityLevel:   0,
-		LogFile:          "",
+		LogFile:          TargetStdOut,
 		FallbackFileName: "run.log",
 		FallbackDir:      "logs",
 		Rolling:          true,
@@ -42,14 +42,14 @@ func DefaultOptions() Options {
 }
 
 const (
-	StdOut   = ":stdout"
-	StdErr   = ":stderr"
-	Disabled = ":null"
+	TargetStdOut = ":stdout"
+	TargetStdErr = ":stderr"
+	TargetNull   = ":null"
 )
 
 func Init(opts *Options) {
 	logFile := opts.LogFile
-	if logFile == Disabled {
+	if logFile == TargetNull {
 		return
 	}
 	level := logLevelFromVerbosityLevel(opts.VerbosityLevel)
@@ -108,9 +108,9 @@ func createWriteStream(opts *Options) io.Writer {
 		}
 	}
 	switch logFile {
-	case StdOut:
+	case TargetStdOut:
 		return os.Stdout
-	case StdErr:
+	case TargetStdErr:
 		return os.Stderr
 	default:
 		if err := touchFilePath(logFile); err != nil {
