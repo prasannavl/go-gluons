@@ -238,15 +238,19 @@ func WithContextItems(items []Item) Logger {
 }
 
 var (
-	g Logger
+	g *Logger
 )
 
 func init() {
-	g = Logger{recorder: NopRecorder{}}
+	g = &Logger{recorder: NopRecorder{}}
 }
 
-func SetGlobal(recorder Recorder) {
-	g.recorder = recorder
+func SetGlobal(l *Logger) {
+	g = l
+}
+
+func GetGlobal() *Logger {
+	return g
 }
 
 func New(recorder Recorder) *Logger {
