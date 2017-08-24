@@ -75,11 +75,14 @@ func Init(opts *Options) {
 	}
 
 	rec := log.LeveledRecorder{
-		MaxLevel: log.InfoLevel,
+		MaxLevel: level,
 		Target:   &target,
 	}
 
-	log.SetGlobal(&rec)
+	l := log.New(&rec)
+	log.SetGlobal(l)
+	stdWriter := log.NewLogWriter(l, log.WarnLevel, "external: ")
+	stdlog.SetOutput(stdWriter)
 }
 
 func logLevelFromVerbosityLevel(vLevel int) log.Level {
