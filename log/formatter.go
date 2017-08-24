@@ -3,6 +3,8 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -46,7 +48,23 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 }
 
 func DefaultTextFormatter(r *Record) string {
-	return ""
+	var buf bytes.Buffer
+	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
+	buf.WriteString("," + strconv.Itoa(int(r.Meta.Level)) + ",")
+	args := r.Args
+	if r.Format == "" {
+		fmt.Fprintf(&buf, "%q", fmt.Sprint(args...))
+	} else if len(args) > 0 {
+		fmt.Fprintf(&buf, "%q", fmt.Sprintf(r.Format, args...))
+	} else {
+		fmt.Fprintf(&buf, "%q", r.Format)
+	}
+	ctx := r.Context()
+	for _, x := range ctx {
+		fmt.Fprintf(&buf, ",%q=%q", x.Name, x.Value)
+	}
+	buf.WriteString("\r\n")
+	return buf.String()
 }
 
 func GetLogLevelString(lvl Level) string {
@@ -62,7 +80,7 @@ func GetLogLevelString(lvl Level) string {
 	case TraceLevel:
 		return "trace"
 	}
-	return " MSG  "
+	return " msg  "
 }
 
 func GetLogLevelColoredString(lvl Level) string {
@@ -72,7 +90,7 @@ func GetLogLevelColoredString(lvl Level) string {
 func GetLogLevelColoredMsg(lvl Level, msg string) string {
 	switch lvl {
 	case InfoLevel:
-		return color.HiBlueString(msg)
+		return color.BlueString(msg)
 	case WarnLevel:
 		return color.HiYellowString(msg)
 	case ErrorLevel:
