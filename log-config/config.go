@@ -126,10 +126,10 @@ func logLevelFromVerbosityLevel(vLevel int) log.Level {
 func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 	var err error
 	logFile := opts.LogFile
-	const loggerErrFormat = "error: logger => %s"
+	const errFormat = "error: logger => %s"
 	if logFile == "" {
 		if logFile, err = touchFile(opts.FallbackDir, opts.FallbackFileName); err != nil {
-			stdlog.Fatalf(loggerErrFormat, err.Error())
+			stdlog.Fatalf(errFormat, err.Error())
 		}
 	}
 	switch logFile {
@@ -139,12 +139,12 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 		return os.Stderr, TargetStdErr
 	default:
 		if err := touchFilePath(logFile); err != nil {
-			stdlog.Fatalf(loggerErrFormat, err.Error())
+			stdlog.Fatalf(errFormat, err.Error())
 		}
 		if !opts.Rolling {
 			fd, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, os.FileMode(0644))
 			if err != nil {
-				stdlog.Fatalf(loggerErrFormat, err.Error())
+				stdlog.Fatalf(errFormat, err.Error())
 			}
 			return fd, logFile
 		}
