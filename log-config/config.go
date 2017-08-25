@@ -23,6 +23,7 @@ type Options struct {
 	CompressBackups bool
 	NoColor         bool
 	Humanize        bool
+	StdLogLevel     log.Level
 }
 
 func DefaultOptions() Options {
@@ -38,6 +39,7 @@ func DefaultOptions() Options {
 		CompressBackups:  true,
 		NoColor:          false,
 		Humanize:         true,
+		StdLogLevel:      log.TraceLevel,
 	}
 }
 
@@ -47,7 +49,8 @@ const (
 	TargetNull   = ":null"
 )
 
-func Init(opts *Options) {
+func Init(opts *Options, meta *LogInstanceMeta) {
+	meta.Enabled = false
 	logFile := opts.LogFile
 	if logFile == TargetNull {
 		return
@@ -56,7 +59,7 @@ func Init(opts *Options) {
 	if level == 0 {
 		return
 	}
-	s := createWriteStream(opts)
+	s, name := mustCreateWriteStream(opts)
 	var formatter func(r *log.Record) string
 
 	if opts.Humanize {
@@ -81,8 +84,24 @@ func Init(opts *Options) {
 
 	l := log.New(&rec)
 	log.SetGlobal(l)
-	stdWriter := log.NewLogWriter(l, log.WarnLevel, "external: ")
+	stdWriter := log.NewLogWriter(l, opts.StdLogLevel, "std: ")
 	stdlog.SetOutput(stdWriter)
+
+	meta.Enabled = true
+	meta.Filename = name
+	meta.Logger = l
+	meta.Writer = s
+	meta.StdWriter = stdWriter
+	meta.StdLogger = stdlog.New(stdWriter, "", 0)
+}
+
+type LogInstanceMeta struct {
+	Enabled   bool
+	Filename  string
+	Writer    io.Writer
+	Logger    *log.Logger
+	StdWriter *log.LogWriter
+	StdLogger *stdlog.Logger
 }
 
 func logLevelFromVerbosityLevel(vLevel int) log.Level {
@@ -101,7 +120,10 @@ func logLevelFromVerbosityLevel(vLevel int) log.Level {
 	return log.TraceLevel
 }
 
-func createWriteStream(opts *Options) io.Writer {
+// TODO: Handle the case of parallel logs using exclusive write streams, and
+// create logs suffixed with the datetime to create unique paths,
+// before lumberjack fails
+func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 	var err error
 	logFile := opts.LogFile
 	const loggerErrFormat = "error: logger => %s"
@@ -112,9 +134,9 @@ func createWriteStream(opts *Options) io.Writer {
 	}
 	switch logFile {
 	case TargetStdOut:
-		return os.Stdout
+		return os.Stdout, TargetStdOut
 	case TargetStdErr:
-		return os.Stderr
+		return os.Stderr, TargetStdErr
 	default:
 		if err := touchFilePath(logFile); err != nil {
 			stdlog.Fatalf(loggerErrFormat, err.Error())
@@ -124,7 +146,7 @@ func createWriteStream(opts *Options) io.Writer {
 			if err != nil {
 				stdlog.Fatalf(loggerErrFormat, err.Error())
 			}
-			return fd
+			return fd, logFile
 		}
 		return &lumberjack.Logger{
 			Filename:   logFile,
@@ -132,7 +154,7 @@ func createWriteStream(opts *Options) io.Writer {
 			MaxBackups: opts.MaxBackups,
 			MaxAge:     opts.MaxAge,
 			Compress:   opts.CompressBackups,
-		}
+		}, logFile
 	}
 }
 
