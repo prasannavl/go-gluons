@@ -1,4 +1,4 @@
-package platform
+package lifecycle
 
 import (
 	"os"
@@ -8,9 +8,11 @@ import (
 	"github.com/prasannavl/go-grab/log"
 )
 
-func SetExitHandler(handler func()) {
+var ShutdownSignals = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP}
+
+func CreateShutdownHandler(handler func(), s ...os.Signal) {
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(quit, s...)
 
 	go func() {
 		for sig := range quit {
