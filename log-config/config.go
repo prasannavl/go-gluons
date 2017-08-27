@@ -49,8 +49,8 @@ const (
 	TargetNull   = ":null"
 )
 
-func Init(opts *Options, meta *LogInstanceMeta) {
-	meta.Enabled = false
+func Init(opts *Options, result *LogInitResult) {
+	result.Enabled = false
 	logFile := opts.LogFile
 	if logFile == TargetNull {
 		return
@@ -87,15 +87,15 @@ func Init(opts *Options, meta *LogInstanceMeta) {
 	stdWriter := log.NewLogWriter(l, opts.StdLogLevel, "std: ")
 	stdlog.SetOutput(stdWriter)
 
-	meta.Enabled = true
-	meta.Filename = name
-	meta.Logger = l
-	meta.Writer = s
-	meta.StdWriter = stdWriter
-	meta.StdLogger = stdlog.New(stdWriter, "", 0)
+	result.Enabled = true
+	result.Filename = name
+	result.Logger = l
+	result.Writer = s
+	result.StdWriter = stdWriter
+	result.StdLogger = stdlog.New(stdWriter, "", 0)
 }
 
-type LogInstanceMeta struct {
+type LogInitResult struct {
 	Enabled   bool
 	Filename  string
 	Writer    io.Writer
