@@ -1,6 +1,8 @@
 package appcontext
 
-import "go.uber.org/zap"
+import (
+	"github.com/prasannavl/go-grab/log"
+)
 
 type AppContext struct {
 	Services
@@ -9,5 +11,5 @@ type AppContext struct {
 
 // Services is the global services context
 type Services struct {
-	Logger *zap.Logger
+	Logger *log.Logger
 }

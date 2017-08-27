@@ -54,7 +54,7 @@ start() {
     sudo setcap cap_net_bind_service=+ep "$binary_path"
     local log_file_exec="${logs_dir}/${binary_name}-exec.log"
     local log_file="${logs_dir}/${binary_name}.log"
-    nohup "$binary_path" --address=":80" --log-file="${log_file}" &>> $log_file_exec &
+    nohup "$binary_path" --address=":80" --log="${log_file}" &>> $log_file_exec &
     echo "> run: done"
 }
 

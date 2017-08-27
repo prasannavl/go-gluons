@@ -1,18 +1,9 @@
 package platform
 
 import (
-	"syscall"
+	win "github.com/prasannavl/go-grab/platform"
 )
 
 func Init() {
-	setupVirtualTerminal()
-}
-
-func setupVirtualTerminal() {
-	kernel32 := syscall.MustLoadDLL("kernel32.dll")
-	getConsoleWindow := kernel32.MustFindProc("GetConsoleWindow")
-	setConsoleMode := kernel32.MustFindProc("SetConsoleMode")
-
-	r1, _, _ := syscall.Syscall(getConsoleWindow.Addr(), 0, 0, 0, 0)
-	syscall.Syscall(setConsoleMode.Addr(), 2, r1, uintptr(0x0200), 0) // ENABLE_VIRTUAL_TERMINAL_INPUT
+	win.SetupVirtualTerminal()
 }

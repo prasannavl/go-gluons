@@ -7,11 +7,16 @@ import (
 	"pvl/apicore/middleware"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/go-chi/render"
+	"github.com/prasannavl/go-grab/log"
 	"github.com/prasannavl/mchain"
 )
+
+func createAppContext(logger *log.Logger, addr string) *appcontext.AppContext {
+	services := appcontext.Services{Logger: logger}
+	c := appcontext.AppContext{Services: services, ServerAddress: addr}
+	return &c
+}
 
 func NewApp(context *appcontext.AppContext) http.Handler {
 	m := http.NewServeMux()
@@ -20,13 +25,13 @@ func NewApp(context *appcontext.AppContext) http.Handler {
 }
 
 func newAppHandler(c *appcontext.AppContext, host string) http.Handler {
-	return mchain.NewBuilder(
+	return mchain.CreateBuilder(
 		middleware.RequestContextInitHandler,
 		middleware.RequestLogHandler,
 		middleware.RequestDurationHandler,
 		middleware.RequestIDMustInitHandler,
 	).Handler(CreateActionHandler(host)).BuildHttp(func(err error) {
-		c.Logger.Error("unhandled", zap.Error(err))
+		c.Logger.Errorf("unhandled: %s", err.Error())
 	})
 }
 
@@ -43,10 +48,4 @@ func CreateActionHandler(host string) mchain.Handler {
 		return nil
 	}
 	return mchain.HandlerFunc(f)
-}
-
-func createAppContext(logger *zap.Logger, addr string) *appcontext.AppContext {
-	services := appcontext.Services{Logger: logger}
-	c := appcontext.AppContext{Services: services, ServerAddress: addr}
-	return &c
 }
