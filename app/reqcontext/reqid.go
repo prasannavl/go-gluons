@@ -14,9 +14,8 @@ const RequestIDHeaderKey = "X-Request-Id"
 func CreateReqIDHandler(reuseUpstreamID bool) mchain.SimpleMiddleware {
 	if reuseUpstreamID {
 		return mchain.SimpleMiddleware(ReqIDInitOrReuseHandler)
-	} else {
-		return mchain.SimpleMiddleware(ReqIDInitOrFailHandler)
 	}
+	return mchain.SimpleMiddleware(ReqIDInitOrFailHandler)
 }
 
 func ReqIDInitOrFailHandler(w http.ResponseWriter, r *http.Request, next mchain.Handler) error {

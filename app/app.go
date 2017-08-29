@@ -21,7 +21,7 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 	return &c
 }
 
-func newAppHandler(c *AppContext) http.Handler {
+func newMcHandler(c *AppContext) http.Handler {
 	reqLogHandler := reqcontext.CreateRequestLogHandler(c.Logger)
 	b := builder.Create()
 	b.AddSimple(
@@ -30,7 +30,7 @@ func newAppHandler(c *AppContext) http.Handler {
 		reqcontext.RequestDurationHandler,
 		reqcontext.CreateReqIDHandler(false),
 	)
-	b.Handler(CreateActionHandler(c.ServerAddress))
+	b.Handler(CreateMcActionHandler(c.ServerAddress))
 	return b.BuildHttp(func(err error) {
 		c.Logger.Errorf("unhandled: %s", err.Error())
 	})
@@ -38,23 +38,30 @@ func newAppHandler(c *AppContext) http.Handler {
 
 func NewApp(context *AppContext) http.Handler {
 	m := http.NewServeMux()
-	m.Handle("/", newAppHandler(context))
+	m.HandleFunc("/raw", func(w http.ResponseWriter, r *http.Request) {
+		sendReply(context.ServerAddress, w, r)
+	})
+	m.Handle("/mchain", newMcHandler(context))
 	return http.Handler(m)
 }
 
-func CreateActionHandler(host string) mchain.Handler {
+func CreateMcActionHandler(host string) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		data := struct {
-			Message string
-			Date    time.Time
-		}{
-			fmt.Sprintf("Hello world from %s", host),
-			time.Now(),
-		}
-		render.JSON(w, r, &data)
+		sendReply(host, w, r)
 		return nil
 	}
 	return mchain.HandlerFunc(f)
+}
+
+func sendReply(host string, w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		Message string
+		Date    time.Time
+	}{
+		fmt.Sprintf("Hello world from %s", host),
+		time.Now(),
+	}
+	render.JSON(w, r, &data)
 }
 
 func Run(logger *log.Logger, addr string) {
