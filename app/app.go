@@ -21,16 +21,15 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 	return &c
 }
 
-func newMcHandler(c *AppContext) http.Handler {
-	reqLogHandler := reqcontext.CreateRequestLogHandler(c.Logger)
+func newAppHandler(c *AppContext) http.Handler {
 	b := builder.Create()
 	b.AddSimple(
 		reqcontext.RequestContextInitHandler,
-		reqLogHandler,
+		reqcontext.CreateRequestLogHandler(c.Logger),
 		reqcontext.RequestDurationHandler,
 		reqcontext.CreateReqIDHandler(false),
 	)
-	b.Handler(CreateMcActionHandler(c.ServerAddress))
+	b.Handler(CreateActionHandler(c.ServerAddress))
 	return b.BuildHttp(func(err error) {
 		c.Logger.Errorf("unhandled: %s", err.Error())
 	})
@@ -41,11 +40,11 @@ func NewApp(context *AppContext) http.Handler {
 	m.HandleFunc("/raw", func(w http.ResponseWriter, r *http.Request) {
 		sendReply(context.ServerAddress, w, r)
 	})
-	m.Handle("/mchain", newMcHandler(context))
+	m.Handle("/mchain", newAppHandler(context))
 	return http.Handler(m)
 }
 
-func CreateMcActionHandler(host string) mchain.Handler {
+func CreateActionHandler(host string) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		sendReply(host, w, r)
 		return nil
