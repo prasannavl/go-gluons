@@ -140,13 +140,17 @@ func (l Logger) Flush() {
 }
 
 func (l Logger) WithContext(name string, value interface{}) Logger {
-	cx := append(l.ctx, Item{name, value})
-	return Logger{g.recorder, cx}
+	s := make([]Item, 0, len(l.ctx)+1)
+	s = append(s, l.ctx...)
+	s = append(s, Item{name, value})
+	return Logger{l.recorder, s}
 }
 
 func (l Logger) WithContextItems(items []Item) Logger {
-	cx := append(g.ctx, items...)
-	return Logger{g.recorder, cx}
+	s := make([]Item, 0, len(l.ctx)+len(items))
+	s = append(s, l.ctx...)
+	s = append(s, items...)
+	return Logger{l.recorder, s}
 }
 
 func IsEnabled(lvl Level) bool {
