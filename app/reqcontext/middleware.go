@@ -13,13 +13,14 @@ func RequestContextInitHandler(w http.ResponseWriter, r *http.Request, next mcha
 }
 
 func CreateRequestLogHandler(logger *log.Logger) mchain.SimpleMiddleware {
-	return mchain.SimpleMiddleware(func(w http.ResponseWriter, r *http.Request, next mchain.Handler) error {
+	f := func(w http.ResponseWriter, r *http.Request, next mchain.Handler) error {
 		c := FromRequest(r)
 		c.Logger = *logger
 		err := next.ServeHTTP(w, r)
 		c.Logger.Tracef("%s %v %s", r.Method, c.EndTime.Sub(c.StartTime), r.URL.String())
 		return err
-	})
+	}
+	return mchain.SimpleMiddleware(f)
 }
 
 func RequestDurationHandler(w http.ResponseWriter, r *http.Request, next mchain.Handler) error {

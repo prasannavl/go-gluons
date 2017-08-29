@@ -28,7 +28,7 @@ func newAppHandler(c *AppContext) http.Handler {
 		reqcontext.RequestContextInitHandler,
 		reqLogHandler,
 		reqcontext.RequestDurationHandler,
-		reqcontext.ReqIDInitOrFailHandler,
+		reqcontext.CreateReqIDHandler(false),
 	)
 	b.Handler(CreateActionHandler(c.ServerAddress))
 	return b.BuildHttp(func(err error) {

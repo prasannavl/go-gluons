@@ -11,8 +11,8 @@ import (
 
 const RequestIDHeaderKey = "X-Request-Id"
 
-func CreateReqIDHandler(reuseID bool) mchain.SimpleMiddleware {
-	if reuseID {
+func CreateReqIDHandler(reuseUpstreamID bool) mchain.SimpleMiddleware {
+	if reuseUpstreamID {
 		return mchain.SimpleMiddleware(ReqIDInitOrReuseHandler)
 	} else {
 		return mchain.SimpleMiddleware(ReqIDInitOrFailHandler)
