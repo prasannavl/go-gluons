@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/prasannavl/go-grab/log"
 )
 
 type RequestContext struct {
 	RequestID uuid.UUID
 	StartTime time.Time
 	EndTime   time.Time
+	Logger    log.Logger
 }
 
 type requestContextKey struct{}

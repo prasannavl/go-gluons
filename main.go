@@ -1,18 +1,13 @@
 package main
 
 import (
-	"context"
-	"net/http"
-	"pvl/apicore/appcontext"
-	"time"
-
 	flag "github.com/spf13/pflag"
 
 	"fmt"
 
+	"pvl/apicore/app"
 	"pvl/apicore/platform"
 
-	"github.com/prasannavl/go-grab/lifecycle"
 	"github.com/prasannavl/go-grab/log"
 	logc "github.com/prasannavl/go-grab/log-config"
 )
@@ -22,20 +17,29 @@ func main() {
 	var logFile string
 	var logDisabled bool
 	var verbosity int
+	var displayVersion bool
 
 	platform.Init()
 
 	flag.Usage = func() {
-		fmt.Printf("\nUsage: [opts]\n\nOptions:\n")
+		printPackageHeader(false)
+		fmt.Printf("Usage: [opts]\n\nOptions:\r\n")
 		flag.PrintDefaults()
 		fmt.Println()
 	}
 
+	flag.BoolVar(&displayVersion, "version", false, "display the version and exit")
 	flag.CountVarP(&verbosity, "verbose", "v", "verbosity level")
 	flag.StringVarP(&addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
 	flag.StringVar(&logFile, "log", "", "the log file destination")
 	flag.BoolVar(&logDisabled, "no-log", false, "disable the logger")
+
 	flag.Parse()
+
+	if displayVersion {
+		printPackageHeader(true)
+		return
+	}
 
 	logInitResult := logc.LogInitResult{}
 	if !logDisabled {
@@ -48,26 +52,13 @@ func main() {
 	}
 
 	log.Infof("listen-address: %q", addr)
-
-	c := createAppContext(logInitResult.Logger, addr)
-	runServer(c, NewApp(c))
+	app.Run(logInitResult.Logger, addr)
 }
 
-func runServer(c *appcontext.AppContext, handler http.Handler) {
-	server := &http.Server{
-		Addr:           c.ServerAddress,
-		Handler:        handler,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20}
-
-	lifecycle.CreateShutdownHandler(func() {
-		server.Shutdown(context.Background())
-	}, lifecycle.ShutdownSignals...)
-
-	err := server.ListenAndServe()
-	if err != http.ErrServerClosed {
-		log.Errorf("server close: %s", err.Error())
+func printPackageHeader(versionOnly bool) {
+	if versionOnly {
+		fmt.Printf("%s", app.Version)
+	} else {
+		fmt.Printf("%s\t%s\r\n", app.Package, app.Version)
 	}
-	log.Info("exit")
 }

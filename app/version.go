@@ -1,4 +1,4 @@
-package meta
+package app
 
 var (
 	// Version of the package

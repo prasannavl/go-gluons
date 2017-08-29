@@ -1,4 +1,4 @@
-package appcontext
+package app
 
 import (
 	"github.com/prasannavl/go-grab/log"

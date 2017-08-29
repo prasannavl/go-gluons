@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"pvl/api-core/appcontext"
+	"pvl/apicore/appcontext"
 )
 
 type User struct {
