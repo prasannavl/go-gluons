@@ -8,10 +8,10 @@ import (
 )
 
 func TestPrint(t *testing.T) {
-	rec := log.CreateMultiRecorder(
-		&log.LeveledRecorder{
+	rec := log.CreateMultiSink(
+		&log.LeveledSink{
 			MaxLevel: log.InfoLevel,
-			Target: &log.StreamRecorder{
+			Target: &log.StreamSink{
 				Formatter: log.DefaultColorTextFormatterForHuman,
 				Stream:    os.Stdout,
 			},
@@ -30,8 +30,8 @@ func TestPrint(t *testing.T) {
 	log.Infof("%s", "Hey you X")
 	log.Warnf("%s %q %v", "Hey", "you", "Y")
 
-	l2 := log.WithContext("ctxName", "some val")
+	l2 := log.With("ctxName", "some val")
 	l2.Info("hello there!!")
-	l2.WithContext("ctx2", "another val").Info("Hey you")
+	l2.With("ctx2", "another val").Info("Hey you")
 	l2.Infof("%s %v", "hello there", "again")
 }

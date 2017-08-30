@@ -16,8 +16,8 @@ const (
 )
 
 type Logger struct {
-	recorder Recorder
-	ctx      []Item
+	sink   Sink
+	fields []Field
 }
 
 type Record struct {
@@ -27,11 +27,11 @@ type Record struct {
 	Args   []interface{}
 }
 
-func (r *Record) Context() []Item {
-	return r.l.ctx
+func (r *Record) Fields() []Field {
+	return r.l.fields
 }
 
-type Item struct {
+type Field struct {
 	Name  string
 	Value interface{}
 }
@@ -56,7 +56,7 @@ func newMetadata(lvl Level, withTime bool) Metadata {
 
 func (l Logger) IsEnabled(lvl Level) bool {
 	m := newMetadata(lvl, false)
-	return l.recorder.IsEnabled(&m)
+	return l.sink.IsEnabled(&m)
 }
 
 func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
@@ -64,7 +64,7 @@ func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
 		return
 	}
 	r := newRecord(l, newMetadata(lvl, true), format, args)
-	l.recorder.Log(&r)
+	l.sink.Log(&r)
 }
 
 func (l Logger) Log(lvl Level, message string) {
@@ -136,21 +136,21 @@ func (l Logger) Tracef(format string, args ...interface{}) {
 }
 
 func (l Logger) Flush() {
-	l.recorder.Flush()
+	l.sink.Flush()
 }
 
-func (l Logger) WithContext(name string, value interface{}) Logger {
-	s := make([]Item, 0, len(l.ctx)+1)
-	s = append(s, l.ctx...)
-	s = append(s, Item{name, value})
-	return Logger{l.recorder, s}
+func (l Logger) With(name string, value interface{}) Logger {
+	s := make([]Field, 0, len(l.fields)+1)
+	s = append(s, l.fields...)
+	s = append(s, Field{name, value})
+	return Logger{l.sink, s}
 }
 
-func (l Logger) WithContextItems(items []Item) Logger {
-	s := make([]Item, 0, len(l.ctx)+len(items))
-	s = append(s, l.ctx...)
-	s = append(s, items...)
-	return Logger{l.recorder, s}
+func (l Logger) WithFields(fields []Field) Logger {
+	s := make([]Field, 0, len(l.fields)+len(fields))
+	s = append(s, l.fields...)
+	s = append(s, fields...)
+	return Logger{l.sink, s}
 }
 
 func IsEnabled(lvl Level) bool {
@@ -233,12 +233,12 @@ func Flush() {
 	g.Flush()
 }
 
-func WithContext(name string, val interface{}) Logger {
-	return g.WithContext(name, val)
+func With(name string, val interface{}) Logger {
+	return g.With(name, val)
 }
 
-func WithContextItems(items []Item) Logger {
-	return g.WithContextItems(items)
+func WithFields(fields []Field) Logger {
+	return g.WithFields(fields)
 }
 
 var (
@@ -246,7 +246,7 @@ var (
 )
 
 func init() {
-	g = &Logger{recorder: NopRecorder{}}
+	g = &Logger{sink: NopSink{}}
 }
 
 func SetGlobal(l *Logger) {
@@ -257,6 +257,6 @@ func GetGlobal() *Logger {
 	return g
 }
 
-func New(recorder Recorder) *Logger {
-	return &Logger{recorder, nil}
+func New(sink Sink) *Logger {
+	return &Logger{sink, nil}
 }

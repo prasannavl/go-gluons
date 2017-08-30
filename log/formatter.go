@@ -20,7 +20,7 @@ func DefaultTextFormatterForHuman(r *Record) string {
 	} else {
 		timeFormat = "03:04:05"
 	}
-	buf.WriteString(color.HiBlackString(t.Format(timeFormat)))
+	buf.WriteString(t.Format(timeFormat))
 	buf.WriteString("  " + GetLogLevelString(r.Meta.Level) + "  ")
 	args := r.Args
 	if r.Format == "" {
@@ -30,7 +30,7 @@ func DefaultTextFormatterForHuman(r *Record) string {
 	} else {
 		buf.WriteString(r.Format)
 	}
-	for _, x := range r.Context() {
+	for _, x := range r.Fields() {
 		fmt.Fprintf(&buf, " %s=%v ", x.Name, x.Value)
 	}
 	buf.WriteString("\r\n")
@@ -56,7 +56,7 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 	} else {
 		buf.WriteString(r.Format)
 	}
-	for _, x := range r.Context() {
+	for _, x := range r.Fields() {
 		fmt.Fprintf(&buf, " %s=%v ", x.Name, x.Value)
 	}
 	buf.WriteString("\r\n")
@@ -75,7 +75,7 @@ func DefaultTextFormatter(r *Record) string {
 	} else {
 		fmt.Fprintf(&buf, "%q", r.Format)
 	}
-	ctx := r.Context()
+	ctx := r.Fields()
 	for _, x := range ctx {
 		fmt.Fprintf(&buf, ",%q=%q", x.Name, x.Value)
 	}
