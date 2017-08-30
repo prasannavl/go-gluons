@@ -3,14 +3,15 @@ package app
 import (
 	"fmt"
 	"net/http"
-	"pvl/apicore/app/reqcontext"
 	"time"
 
 	"context"
 
-	"github.com/go-chi/render"
 	"github.com/prasannavl/go-grab/lifecycle"
 	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-starter-api/app/middleware"
+	"github.com/prasannavl/go-starter-api/app/reqcontext"
+	"github.com/prasannavl/go-starter-api/app/responder"
 	"github.com/prasannavl/mchain"
 	"github.com/prasannavl/mchain/builder"
 )
@@ -23,15 +24,19 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 
 func newAppHandler(c *AppContext) http.Handler {
 	b := builder.Create()
-	b.AddSimple(
-		reqcontext.RequestContextInitHandler,
-		reqcontext.CreateRequestLogHandler(c.Logger),
-		reqcontext.RequestDurationHandler,
-		reqcontext.CreateReqIDHandler(false),
+
+	b.Add(
+		reqcontext.CreateInitHandler(c.Logger),
+		reqcontext.ErrorHandler,
+		reqcontext.LogHandler,
+		reqcontext.DurationHandler,
+		middleware.RecoverPanicHandler,
+		reqcontext.CreateRequestIDHandler(false),
 	)
+
 	b.Handler(CreateActionHandler(c.ServerAddress))
 	return b.BuildHttp(func(err error) {
-		c.Logger.Errorf("unhandled: %s", err.Error())
+		c.Logger.Errorf("unhandled: %#v", err)
 	})
 }
 
@@ -40,7 +45,7 @@ func NewApp(context *AppContext) http.Handler {
 	m.HandleFunc("/raw", func(w http.ResponseWriter, r *http.Request) {
 		sendReply(context.ServerAddress, w, r)
 	})
-	m.Handle("/mchain", newAppHandler(context))
+	m.Handle("/", newAppHandler(context))
 	return http.Handler(m)
 }
 
@@ -60,7 +65,7 @@ func sendReply(host string, w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("Hello world from %s", host),
 		time.Now(),
 	}
-	render.JSON(w, r, &data)
+	responder.Send(&data, w, r)
 }
 
 func Run(logger *log.Logger, addr string) {

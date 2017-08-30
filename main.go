@@ -5,11 +5,10 @@ import (
 
 	"fmt"
 
-	"pvl/apicore/app"
-	"pvl/apicore/platform"
-
 	"github.com/prasannavl/go-grab/log"
 	logc "github.com/prasannavl/go-grab/log-config"
+	"github.com/prasannavl/go-starter-api/app"
+	"github.com/prasannavl/go-starter-api/platform"
 )
 
 func main() {
