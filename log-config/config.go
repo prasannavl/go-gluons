@@ -72,12 +72,12 @@ func Init(opts *Options, result *LogInitResult) {
 		formatter = log.DefaultTextFormatter
 	}
 
-	target := log.StreamRecorder{
+	target := log.StreamSink{
 		Formatter: formatter,
 		Stream:    s,
 	}
 
-	rec := log.LeveledRecorder{
+	rec := log.LeveledSink{
 		MaxLevel: level,
 		Target:   &target,
 	}
