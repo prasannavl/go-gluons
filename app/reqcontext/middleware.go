@@ -29,28 +29,32 @@ func ErrorHandler(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		err := next.ServeHTTP(w, r)
 		if err != nil {
-			c := FromRequest(r)
-			iter := errutils.MakeIteratorLimited(err, 10)
-			var httpErr httperror.Error
-			for {
-				e := iter.Next()
-				if e == nil {
-					break
-				}
-				if herr, ok := e.(httperror.Error); ok {
-					httpErr = herr
-				}
-				c.Logger.Errorf("cause: %s => %#v ", e.Error(), e)
-			}
-			if httpErr != nil {
-				responder.SendHttpError(httpErr, w, r)
-			} else {
-				responder.SendStatus(http.StatusInternalServerError, w)
-			}
+			handleError(err, w, r)
 		}
 		return nil
 	}
 	return mchain.HandlerFunc(f)
+}
+
+func handleError(err error, w http.ResponseWriter, r *http.Request) {
+	c := FromRequest(r)
+	iter := errutils.MakeIteratorLimited(err, 10)
+	var httpErr httperror.Error
+	for {
+		e := iter.Next()
+		if e == nil {
+			break
+		}
+		if herr, ok := e.(httperror.Error); ok {
+			httpErr = herr
+		}
+		c.Logger.Errorf("cause: %s => %#v ", e.Error(), e)
+	}
+	if httpErr != nil {
+		responder.SendHttpError(httpErr, w, r)
+	} else {
+		responder.SendStatus(http.StatusInternalServerError, w)
+	}
 }
 
 func LogHandler(next mchain.Handler) mchain.Handler {
