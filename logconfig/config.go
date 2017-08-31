@@ -142,7 +142,7 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 			stdlog.Fatalf(errFormat, err.Error())
 		}
 		if !opts.Rolling {
-			fd, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
+			fd, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_EXCL, os.FileMode(0644))
 			if err != nil {
 				stdlog.Println(errFormat, err.Error())
 			}
@@ -165,7 +165,7 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 func checkedLogFileName(logFile string) (string, error) {
 	filename := logFile
 	if err := touchFile(filename); err != nil {
-		filename = filename + "-pid." + strconv.Itoa(os.Getpid())
+		filename = filename + ".pid-" + strconv.Itoa(os.Getpid()) + ".txt"
 		if e := touchFile(filename); e != nil {
 			// Return the old error
 			return "", err
@@ -188,7 +188,7 @@ func touchFile(path string) error {
 	if err = ensureFileParentDir(path); err != nil {
 		return err
 	}
-	fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
+	fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_EXCL, os.FileMode(0644))
 	if err != nil {
 		return err
 	}
