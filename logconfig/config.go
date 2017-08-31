@@ -1,10 +1,11 @@
-package logger
+package logconfig
 
 import (
 	"io"
 	stdlog "log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/prasannavl/go-grab/log"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
@@ -22,15 +23,14 @@ type Options struct {
 	MaxBackups      int
 	MaxAge          int // days
 	CompressBackups bool
-	NoColor         bool
-	Humanize        bool
+	Humanize        int
 	StdLogLevel     log.Level
 }
 
 func DefaultOptions() Options {
 	return Options{
-		VerbosityLevel:   0,
-		LogFile:          TargetStdOut,
+		VerbosityLevel:   VerbosityLevel.Warn,
+		LogFile:          CommonTargets.TargetStdOut,
 		FallbackFileName: "run.log",
 		FallbackDir:      "logs",
 		Rolling:          true,
@@ -39,22 +39,15 @@ func DefaultOptions() Options {
 		MaxBackups:       2,
 		MaxAge:           28,
 		CompressBackups:  true,
-		NoColor:          false,
-		Humanize:         true,
+		Humanize:         Humanize.Auto,
 		StdLogLevel:      log.TraceLevel,
 	}
 }
 
-const (
-	TargetStdOut = ":stdout"
-	TargetStdErr = ":stderr"
-	TargetNull   = ":null"
-)
-
 func Init(opts *Options, result *LogInitResult) {
 	result.Enabled = false
 	logFile := opts.LogFile
-	if logFile == TargetNull {
+	if logFile == CommonTargets.TargetNull {
 		return
 	}
 	level := logLevelFromVerbosityLevel(opts.VerbosityLevel)
@@ -64,12 +57,8 @@ func Init(opts *Options, result *LogInitResult) {
 	s, name := mustCreateWriteStream(opts)
 	var formatter func(r *log.Record) string
 
-	if opts.Humanize {
-		if opts.NoColor {
-			formatter = log.DefaultTextFormatterForHuman
-		} else {
-			formatter = log.DefaultColorTextFormatterForHuman
-		}
+	if opts.Humanize == Humanize.True {
+		formatter = log.DefaultColorTextFormatterForHuman
 	} else {
 		formatter = log.DefaultTextFormatter
 	}
@@ -87,12 +76,12 @@ func Init(opts *Options, result *LogInitResult) {
 		}
 	}
 
-	rec := log.LeveledSink{
+	target = &log.LeveledSink{
 		MaxLevel: level,
 		Target:   target,
 	}
 
-	l := log.New(&rec)
+	l := log.New(target)
 	log.SetGlobal(l)
 	stdWriter := log.NewLogWriter(l, opts.StdLogLevel, "std: ")
 	stdlog.SetOutput(stdWriter)
@@ -130,31 +119,32 @@ func logLevelFromVerbosityLevel(vLevel int) log.Level {
 	return log.TraceLevel
 }
 
-// TODO: Handle the case of parallel logs using exclusive write streams, and
-// create logs suffixed with the datetime to create unique paths,
-// before lumberjack fails
 func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 	var err error
 	logFile := opts.LogFile
 	const errFormat = "error: logger => %s"
 	if logFile == "" {
-		if logFile, err = touchFile(opts.FallbackDir, opts.FallbackFileName); err != nil {
+		logFile, err = checkedLogFileName(filepath.Clean(opts.FallbackDir + "/" + opts.FallbackFileName))
+		if err != nil {
 			stdlog.Fatalf(errFormat, err.Error())
 		}
 	}
 	switch logFile {
-	case TargetStdOut:
-		return os.Stdout, TargetStdOut
-	case TargetStdErr:
-		return os.Stderr, TargetStdErr
+	case CommonTargets.TargetStdOut:
+		return os.Stdout, logFile
+	case CommonTargets.TargetStdErr:
+		return os.Stderr, logFile
 	default:
-		if err := touchFilePath(logFile); err != nil {
+		if err := ensureFileParentDir(logFile); err != nil {
+			stdlog.Fatalf(errFormat, err.Error())
+		}
+		if logFile, err = checkedLogFileName(logFile); err != nil {
 			stdlog.Fatalf(errFormat, err.Error())
 		}
 		if !opts.Rolling {
-			fd, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, os.FileMode(0644))
+			fd, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
 			if err != nil {
-				stdlog.Fatalf(errFormat, err.Error())
+				stdlog.Println(errFormat, err.Error())
 			}
 			return fd, logFile
 		}
@@ -168,34 +158,88 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 	}
 }
 
-func touchFilePath(path string) error {
-	var err error
-	a, err := filepath.Abs(path)
-	if err != nil {
-		return err
+// This method tries to touch the file, and if not,
+// one possibility is that it's being used by another
+// process. So, try again once with the
+// PID appended. If that fails too - error.
+func checkedLogFileName(logFile string) (string, error) {
+	filename := logFile
+	if err := touchFile(filename); err != nil {
+		filename = filename + "-pid." + strconv.Itoa(os.Getpid())
+		if e := touchFile(filename); e != nil {
+			// Return the old error
+			return "", err
+		}
 	}
-	d := filepath.Dir(a)
-	err = os.MkdirAll(d, os.FileMode(0777))
+	return filename, nil
+}
+
+func ensureFileParentDir(path string) error {
+	d := filepath.Dir(path)
+	err := os.MkdirAll(d, os.FileMode(0777))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func touchFile(dir string, filename string) (string, error) {
+func touchFile(path string) error {
 	var err error
-	d := filepath.Clean(dir)
-	f := d + "/" + filepath.Clean(filename)
-	err = os.MkdirAll(d, os.FileMode(0777))
-	if err != nil {
-		return "", err
+	if err = ensureFileParentDir(path); err != nil {
+		return err
 	}
-	fd, err := os.OpenFile(f, os.O_CREATE, os.FileMode(0644))
+	fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
 	if err != nil {
-		return "", err
+		return err
 	}
 	if err = fd.Close(); err != nil {
-		return "", err
+		return err
 	}
-	return f, nil
+	return nil
 }
+
+// Enums
+
+type (
+	humanizeEnum struct {
+		Auto  int
+		False int
+		True  int
+	}
+
+	commonTargetEnum struct {
+		TargetStdOut string
+		TargetStdErr string
+		TargetNull   string
+	}
+
+	verbosityLevel struct {
+		Error int
+		Warn  int
+		Info  int
+		Debug int
+		Trace int
+	}
+)
+
+var (
+	Humanize = humanizeEnum{
+		Auto:  -1,
+		False: 0,
+		True:  1,
+	}
+
+	CommonTargets = commonTargetEnum{
+		TargetStdOut: ":stdout",
+		TargetStdErr: ":stderr",
+		TargetNull:   ":null",
+	}
+
+	VerbosityLevel = verbosityLevel{
+		Error: -1,
+		Warn:  0,
+		Info:  1,
+		Debug: 2,
+		Trace: 3,
+	}
+)
