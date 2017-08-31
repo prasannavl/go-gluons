@@ -260,3 +260,7 @@ func GetGlobal() *Logger {
 func New(sink Sink) *Logger {
 	return &Logger{sink, nil}
 }
+
+func GetSink(logger *Logger) Sink {
+	return logger.sink
+}
