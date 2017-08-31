@@ -1,6 +1,7 @@
 package log
 
 import "io"
+import "sync"
 
 type Sink interface {
 	Log(*Record)
@@ -49,6 +50,27 @@ func (s *StreamSink) Flush() {
 
 func (s *StreamSink) IsEnabled(m *Metadata) bool {
 	return true
+}
+
+type SyncedSink struct {
+	m     sync.Mutex
+	Inner Sink
+}
+
+func (s *SyncedSink) Log(r *Record) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	s.Inner.Log(r)
+}
+
+func (s *SyncedSink) Flush() {
+	s.m.Lock()
+	defer s.m.Unlock()
+	s.Inner.Flush()
+}
+
+func (s *SyncedSink) IsEnabled(m *Metadata) bool {
+	return s.Inner.IsEnabled(m)
 }
 
 type MultiSink []Sink

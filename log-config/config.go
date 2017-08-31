@@ -15,6 +15,7 @@ type Options struct {
 	LogFile          string
 	FallbackFileName string
 	FallbackDir      string
+	LoggerMutex      bool
 
 	Rolling         bool
 	MaxSize         int // megabytes
@@ -33,6 +34,7 @@ func DefaultOptions() Options {
 		FallbackFileName: "run.log",
 		FallbackDir:      "logs",
 		Rolling:          true,
+		LoggerMutex:      false,
 		MaxSize:          100,
 		MaxBackups:       2,
 		MaxAge:           28,
@@ -72,14 +74,22 @@ func Init(opts *Options, result *LogInitResult) {
 		formatter = log.DefaultTextFormatter
 	}
 
-	target := log.StreamSink{
+	var target log.Sink
+
+	target = &log.StreamSink{
 		Formatter: formatter,
 		Stream:    s,
 	}
 
+	if opts.LoggerMutex {
+		target = &log.SyncedSink{
+			Inner: target,
+		}
+	}
+
 	rec := log.LeveledSink{
 		MaxLevel: level,
-		Target:   &target,
+		Target:   target,
 	}
 
 	l := log.New(&rec)
