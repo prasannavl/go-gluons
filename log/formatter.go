@@ -69,11 +69,11 @@ func DefaultTextFormatter(r *Record) string {
 	buf.WriteString("," + strconv.Itoa(int(r.Meta.Level)) + ",")
 	args := r.Args
 	if r.Format == "" {
-		fmt.Fprintf(&buf, "%q", fmt.Sprint(args...))
+		fmt.Fprintf(&buf, "%s", fmt.Sprint(args...))
 	} else if len(args) > 0 {
-		fmt.Fprintf(&buf, "%q", fmt.Sprintf(r.Format, args...))
+		fmt.Fprintf(&buf, "%s", fmt.Sprintf(r.Format, args...))
 	} else {
-		fmt.Fprintf(&buf, "%q", r.Format)
+		fmt.Fprintf(&buf, "%s", r.Format)
 	}
 	ctx := r.Fields()
 	for _, x := range ctx {

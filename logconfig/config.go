@@ -57,7 +57,9 @@ func Init(opts *Options, result *LogInitResult) {
 	s, name := mustCreateWriteStream(opts)
 	var formatter func(r *log.Record) string
 
-	if opts.Humanize == Humanize.True {
+	humanize := getHumanizeValue(opts)
+
+	if humanize == Humanize.True {
 		formatter = log.DefaultColorTextFormatterForHuman
 	} else {
 		formatter = log.DefaultTextFormatter
@@ -117,6 +119,16 @@ func logLevelFromVerbosityLevel(vLevel int) log.Level {
 		return log.TraceLevel
 	}
 	return log.TraceLevel
+}
+
+func getHumanizeValue(opts *Options) int {
+	if opts.Humanize == Humanize.Auto {
+		if opts.LogFile == CommonTargets.TargetStdErr || opts.LogFile == CommonTargets.TargetStdOut {
+			return Humanize.True
+		}
+		return Humanize.False
+	}
+	return opts.Humanize
 }
 
 func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
