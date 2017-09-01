@@ -142,7 +142,7 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 			stdlog.Fatalf(errFormat, err.Error())
 		}
 		if !opts.Rolling {
-			fd, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_EXCL, os.FileMode(0644))
+			fd, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
 			if err != nil {
 				stdlog.Println(errFormat, err.Error())
 			}
@@ -159,19 +159,38 @@ func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
 }
 
 // This method tries to touch the file, and if not,
-// one possibility is that it's being used by another
-// process. So, try again once with the
-// PID appended. If that fails too - error.
+// try again once with the PID appended. If that
+// fails too - error.
 func checkedLogFileName(logFile string) (string, error) {
 	filename := logFile
 	if err := touchFile(filename); err != nil {
-		filename = filename + ".pid-" + strconv.Itoa(os.Getpid()) + ".txt"
+		stdlog.Printf("warn: logger => %s", err.Error())
+		filename = alternateFileName(filename)
 		if e := touchFile(filename); e != nil {
 			// Return the old error
 			return "", err
 		}
 	}
 	return filename, nil
+}
+
+func alternateFileName(filename string) string {
+	prefix := filename
+	const txt = ".txt"
+	var ext string
+	if len(filename) > len(txt) {
+		l := len(filename) - len(txt)
+		last := filename[l:]
+		if last == txt {
+			prefix = filename[:l]
+			ext = last
+		}
+	}
+	filename = prefix + ".pid-" + strconv.Itoa(os.Getpid())
+	if len(ext) > 0 {
+		filename += ext
+	}
+	return filename
 }
 
 func ensureFileParentDir(path string) error {
@@ -188,7 +207,7 @@ func touchFile(path string) error {
 	if err = ensureFileParentDir(path); err != nil {
 		return err
 	}
-	fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_EXCL, os.FileMode(0644))
+	fd, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.FileMode(0644))
 	if err != nil {
 		return err
 	}
