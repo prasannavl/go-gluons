@@ -35,7 +35,7 @@ func CreateLogHandler(requestLogLevel log.Level) middleware {
 						r.Method,
 						ColoredHttpStatus(ww.Status()),
 						ColoredDuration(time.Since(startTime)),
-						sizeString(sizeRaw),
+						ColoredTransferSize(sizeRaw),
 						r.URL.String())
 				} else {
 					logger.Logf(
@@ -75,24 +75,58 @@ func LogErrorStack(logger *log.Logger, err interface{}, stack []byte) {
 	}
 }
 
+type ColoredTransferSize int
+
+var sizeColors = [...]string{
+	ansicode.BlackBright,
+	ansicode.Yellow,
+	ansicode.Red,
+}
+
+var sizeColorsLen = len(statusColors)
+
 const (
 	sizeKB = 1 * 1000
-	sizeMB = sizeKB * 1000
-	sizeGB = sizeMB * 1000
 )
 
+var sizeColorLimits = [...]int{80 * sizeKB, 400 * sizeKB}
+
+func (self ColoredTransferSize) ColorString() string {
+	str := sizeString(int(self))
+	index := 0
+	current := int(self)
+	for _, limit := range sizeColorLimits {
+		if current > limit {
+			index++
+		} else {
+			break
+		}
+	}
+	if index >= sizeColorsLen {
+		index = sizeColorsLen - 1
+	}
+	return sizeColors[index] + str + ansicode.Reset
+}
+
+var sizeSuffixes = [...]string{"B", "KB", "MB", "GB"}
+
 func sizeString(size int) string {
-	s := strconv.Itoa(size)
-	if size < sizeKB {
-		return s + "B"
+	index := 0
+	i := 1000
+	for ; ; i *= 1000 {
+		if size > i {
+			index++
+		} else {
+			break
+		}
 	}
-	if size < sizeMB {
-		return s + "KB"
+	maxLen := len(sizeSuffixes)
+	if index >= maxLen {
+		size = maxLen - 1
 	}
-	if size < sizeGB {
-		return s + "MB"
-	}
-	return s + "GB"
+	n := float64(size) / float64(i/1000)
+	s := strconv.FormatFloat(n, 'f', -1, 64)
+	return s + sizeSuffixes[index]
 }
 
 type ColoredHttpStatus int
@@ -101,7 +135,7 @@ func (self ColoredHttpStatus) ColorString() string {
 	return coloredStatusIntString(int(self))
 }
 
-var statusColorMap = []string{
+var statusColors = [...]string{
 	ansicode.Cyan,
 	ansicode.Green,
 	ansicode.Magenta,
@@ -109,16 +143,16 @@ var statusColorMap = []string{
 	ansicode.RedBright,
 }
 
-var statusColorMapLen = len(statusColorMap)
+var statusColorsLen = len(statusColors)
 
 func coloredStatusIntString(code int) string {
 	index := code
 	if index < 100 {
-		return statusColorMap[0]
+		return statusColors[0]
 	}
 	index = index / 100
-	index = (index - 1) % statusColorMapLen
-	return statusColorMap[index] + strconv.Itoa(code) + ansicode.Reset
+	index = (index - 1) % statusColorsLen
+	return statusColors[index] + strconv.Itoa(code) + ansicode.Reset
 }
 
 type ColoredDuration time.Duration
@@ -127,7 +161,7 @@ func (self ColoredDuration) ColorString() string {
 	return coloredTimeString(time.Duration(self))
 }
 
-var timeColorMap = []string{
+var timeColors = [...]string{
 	ansicode.BlackBright,
 	ansicode.Yellow,
 	ansicode.RedBright,
@@ -136,26 +170,22 @@ var timeColorMap = []string{
 	ansicode.RedBg + ansicode.White + ansicode.Bold,
 }
 
-var timeColorMapLen = len(statusColorMap)
+var timeColorsLen = len(statusColors)
+var timeColorLimits = [...]int64{80, 200, 500, 1000, 2000}
 
 func coloredTimeString(duration time.Duration) string {
 	index := 0
 	t := duration.Nanoseconds() / 1000
 	millis := t / 1000
-	if millis > 80 {
-		index++
-		if millis > 200 {
+	for _, limit := range timeColorLimits {
+		if millis > limit {
 			index++
-			if millis > 500 {
-				index++
-				if millis > 1000 {
-					index++
-					if millis > 2000 {
-						index++
-					}
-				}
-			}
+		} else {
+			break
 		}
 	}
-	return timeColorMap[index] + fmt.Sprintf("%v", duration) + ansicode.Reset
+	if index >= timeColorsLen {
+		index = timeColorsLen - 1
+	}
+	return timeColors[index] + fmt.Sprintf("%v", duration) + ansicode.Reset
 }
