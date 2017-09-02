@@ -65,26 +65,26 @@ func Init(opts *Options, result *LogInitResult) {
 		formatter = log.DefaultTextFormatter
 	}
 
-	var target log.Sink
+	var sink log.Sink
 
-	target = &log.StreamSink{
+	sink = &log.StreamSink{
 		Formatter: formatter,
 		Stream:    s,
 	}
 
 	if opts.LoggerMutex {
-		target = &log.SyncedSink{
-			Inner: target,
+		sink = &log.SyncedSink{
+			Inner: sink,
 		}
 	}
 
-	target = &log.LeveledSink{
+	sink = &log.LeveledSink{
 		MaxLevel: level,
-		Target:   target,
+		Inner:    sink,
 	}
 
-	l := log.New(target)
-	log.SetGlobal(l)
+	l := log.New(sink)
+	log.SetLogger(l)
 	stdWriter := log.NewLogWriter(l, opts.StdLogLevel, "std: ")
 	stdlog.SetOutput(stdWriter)
 
