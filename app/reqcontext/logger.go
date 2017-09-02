@@ -47,6 +47,6 @@ func LogError(logger *log.Logger, e interface{}) {
 func LogErrorStack(logger *log.Logger, err interface{}, stack []byte) {
 	LogError(logger, err)
 	if len(stack) > 0 {
-		logger.Errorf("\r\nstack:\r\n%s\r\n", stack)
+		logger.Errorf("stack:\r\n%s\r\n", stack)
 	}
 }
