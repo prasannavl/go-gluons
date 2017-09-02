@@ -249,11 +249,11 @@ func init() {
 	g = &Logger{sink: NopSink{}}
 }
 
-func SetGlobal(l *Logger) {
+func SetLogger(l *Logger) {
 	g = l
 }
 
-func GetGlobal() *Logger {
+func GetLogger() *Logger {
 	return g
 }
 
