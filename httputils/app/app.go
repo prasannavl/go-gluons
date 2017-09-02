@@ -7,6 +7,8 @@ import (
 
 	"context"
 
+	stdlog "log"
+
 	"github.com/prasannavl/go-gluons/httputils/app/reqcontext"
 	"github.com/prasannavl/go-gluons/httputils/app/responder"
 	"github.com/prasannavl/go-gluons/lifecycle"
@@ -25,7 +27,7 @@ func newAppHandler(c *AppContext) http.Handler {
 
 	b.Add(
 		reqcontext.CreateInitHandler(c.Logger),
-		reqcontext.LogHandler,
+		reqcontext.CreateLogHandler(log.InfoLevel),
 		reqcontext.CreateRequestIDHandler(false),
 	)
 
@@ -56,11 +58,14 @@ func sendReply(w http.ResponseWriter, r *http.Request) {
 func Run(logger *log.Logger, addr string) {
 	c := createAppContext(logger, addr)
 	a := NewApp(c)
+
+	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
 	server := &http.Server{
 		Addr:           c.ServerAddress,
 		Handler:        a,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
+		ErrorLog:       stdErrLog,
 		MaxHeaderBytes: 1 << 20}
 
 	lifecycle.CreateShutdownHandler(func() {
