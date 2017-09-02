@@ -1,6 +1,7 @@
 package responder
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/prasannavl/goerror/httperror"
@@ -11,44 +12,52 @@ import (
 // TODO: Proper content negotiation
 // TODO: Use Content-Encoding
 
-func Send(value interface{}, w http.ResponseWriter, r *http.Request) {
+func Send(w http.ResponseWriter, r *http.Request, value interface{}) {
 	if value == nil {
 		return
 	}
 	render.JSON(w, r, value)
 }
 
-func SendContent(contentType string, value interface{}, w http.ResponseWriter, r *http.Request) {
-	Send(value, w, r)
-}
-
-func SendHttpError(err httperror.Error, w http.ResponseWriter, r *http.Request) {
-	var code int
-	var message string
-	if err != nil {
-		code = httperror.ErrorCode(err.Code())
-		message = err.Error()
-	} else {
-		code = http.StatusInternalServerError
-	}
-	SendWithStatus(code, message, w, r)
-}
-
-func SendError(err error, w http.ResponseWriter, r *http.Request) {
+func SendError(w http.ResponseWriter, r *http.Request, err error) {
 	if e, ok := err.(httperror.Error); ok {
-		SendHttpError(e, w, r)
+		sendHttpError(w, r, e)
 		return
 	}
-	if err != nil {
-		Send(err.Error(), w, r)
+	SendWithStatus(w, r, http.StatusInternalServerError, err.Error())
+}
+
+func SendWithStatus(w http.ResponseWriter, r *http.Request, status int, value interface{}) {
+	SetStatus(w, status)
+	Send(w, r, value)
+}
+
+func SetStatus(w http.ResponseWriter, status int) {
+	w.WriteHeader(status)
+}
+
+func SendErrorText(w http.ResponseWriter, errOrStringer interface{}) {
+	var code int
+	var message string
+	switch e := errOrStringer.(type) {
+	case error:
+		message = e.Error()
+		if e, ok := e.(httperror.Error); ok {
+			code = e.Code()
+		}
+	case string:
+		message = e
+	case fmt.Stringer:
+		message = e.String()
+	}
+	c := httperror.ErrorCode(code)
+	if message == "" {
+		SetStatus(w, c)
+	} else {
+		http.Error(w, message, c)
 	}
 }
 
-func SendWithStatus(status int, value interface{}, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(status)
-	Send(value, w, r)
-}
-
-func SendStatus(status int, w http.ResponseWriter) {
-	w.WriteHeader(status)
+func sendHttpError(w http.ResponseWriter, r *http.Request, err httperror.Error) {
+	SendWithStatus(w, r, err.Code(), err.Error())
 }

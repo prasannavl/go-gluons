@@ -9,10 +9,8 @@ import (
 
 	"github.com/prasannavl/go-grab/lifecycle"
 	"github.com/prasannavl/go-grab/log"
-	"github.com/prasannavl/go-starter-api/app/middleware"
-	"github.com/prasannavl/go-starter-api/app/reqcontext"
-	"github.com/prasannavl/go-starter-api/app/responder"
-	"github.com/prasannavl/mchain"
+	"github.com/prasannavl/go-httpapi-base/app/reqcontext"
+	"github.com/prasannavl/go-httpapi-base/app/responder"
 	"github.com/prasannavl/mchain/builder"
 )
 
@@ -23,49 +21,36 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 }
 
 func newAppHandler(c *AppContext) http.Handler {
-	b := builder.Create()
+	b := builder.CreateHttp()
 
 	b.Add(
 		reqcontext.CreateInitHandler(c.Logger),
-		reqcontext.ErrorHandler,
 		reqcontext.LogHandler,
-		reqcontext.DurationHandler,
-		middleware.RecoverPanicHandler,
 		reqcontext.CreateRequestIDHandler(false),
 	)
 
-	b.Handler(CreateActionHandler(c.ServerAddress))
-	return b.BuildHttp(func(err error) {
-		c.Logger.Errorf("unhandled: %#v", err)
-	})
+	b.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sendReply(w, r)
+	}))
+
+	return b.Build()
 }
 
 func NewApp(context *AppContext) http.Handler {
 	m := http.NewServeMux()
-	m.HandleFunc("/raw", func(w http.ResponseWriter, r *http.Request) {
-		sendReply(context.ServerAddress, w, r)
-	})
 	m.Handle("/", newAppHandler(context))
 	return http.Handler(m)
 }
 
-func CreateActionHandler(host string) mchain.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) error {
-		sendReply(host, w, r)
-		return nil
-	}
-	return mchain.HandlerFunc(f)
-}
-
-func sendReply(host string, w http.ResponseWriter, r *http.Request) {
+func sendReply(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Message string
 		Date    time.Time
 	}{
-		fmt.Sprintf("Hello world from %s", host),
+		fmt.Sprint("Hello world!"),
 		time.Now(),
 	}
-	responder.Send(&data, w, r)
+	responder.Send(w, r, &data)
 }
 
 func Run(logger *log.Logger, addr string) {

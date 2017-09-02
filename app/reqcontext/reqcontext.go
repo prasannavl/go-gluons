@@ -3,16 +3,15 @@ package reqcontext
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/prasannavl/go-grab/log"
 )
 
+type middleware = func(http.Handler) http.Handler
+
 type RequestContext struct {
 	RequestID uuid.UUID
-	StartTime time.Time
-	EndTime   time.Time
 	Logger    log.Logger
 }
 

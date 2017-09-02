@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/prasannavl/go-grab/log"
-	logc "github.com/prasannavl/go-grab/log-config"
-	"github.com/prasannavl/go-starter-api/app"
-	"github.com/prasannavl/go-starter-api/platform"
+	"github.com/prasannavl/go-grab/logconfig"
+	"github.com/prasannavl/go-httpapi-base/app"
+	"github.com/prasannavl/go-httpapi-base/platform"
 )
 
 func main() {
@@ -40,16 +40,15 @@ func main() {
 		return
 	}
 
-	logInitResult := logc.LogInitResult{}
+	logInitResult := logconfig.LogInitResult{}
 	if !logDisabled {
-		logOpts := logc.DefaultOptions()
+		logOpts := logconfig.DefaultOptions()
 		if logFile != "" {
 			logOpts.LogFile = logFile
 		}
 		logOpts.VerbosityLevel = verbosity
-		logc.Init(&logOpts, &logInitResult)
+		logconfig.Init(&logOpts, &logInitResult)
 	}
-
 	log.Infof("listen-address: %q", addr)
 	app.Run(logInitResult.Logger, addr)
 }

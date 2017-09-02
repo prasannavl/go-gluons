@@ -1,2 +1,3 @@
-# go-starter-api
-A starter template for go services
+# go-httpapi-base
+
+A base template for go http services

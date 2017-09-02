@@ -4,40 +4,43 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prasannavl/go-httpapi-base/app/responder"
+
 	"github.com/google/uuid"
 	"github.com/prasannavl/goerror/httperror"
-	"github.com/prasannavl/mchain"
 )
 
 const RequestIDHeaderKey = "X-Request-Id"
 
-func CreateRequestIDHandler(reuseUpstreamID bool) mchain.Middleware {
+func CreateRequestIDHandler(reuseUpstreamID bool) middleware {
 	if reuseUpstreamID {
 		return RequestIDInitOrReuseHandler
 	}
 	return RequestIDInitOrFailHandler
 }
 
-func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) error {
+func RequestIDInitOrFailHandler(next http.Handler) http.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) {
 		err := requestIDInitOrFailHandler(r, FromRequest(r))
 		if err != nil {
-			return err
+			responder.SendErrorText(w, err)
+			return
 		}
-		return next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
-	return mchain.HandlerFunc(f)
+	return http.HandlerFunc(f)
 }
 
-func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) error {
+func RequestIDInitOrReuseHandler(next http.Handler) http.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) {
 		err := requestIDInitOrReuseHandler(r, FromRequest(r))
 		if err != nil {
-			return err
+			responder.SendErrorText(w, err)
+			return
 		}
-		return next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
-	return mchain.HandlerFunc(f)
+	return http.HandlerFunc(f)
 }
 
 func requestIDInitOrFailHandler(r *http.Request, c *RequestContext) error {
