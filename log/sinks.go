@@ -22,11 +22,11 @@ func (NopSink) IsEnabled(*Metadata) bool {
 
 type LeveledSink struct {
 	MaxLevel Level
-	Target   Sink
+	Inner    Sink
 }
 
 func (l *LeveledSink) Log(r *Record) {
-	l.Target.Log(r)
+	l.Inner.Log(r)
 }
 
 func (l *LeveledSink) Flush() {
