@@ -6,10 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatih/color"
+	"github.com/prasannavl/go-gluons/ansicode"
 )
 
 var initTime = time.Now()
+
+type ColorStringer interface {
+	ColorString() string
+}
 
 func DefaultTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
@@ -46,9 +50,14 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 	} else {
 		timeFormat = "03:04:05"
 	}
-	buf.WriteString(color.HiBlackString(t.Format(timeFormat)))
+	buf.WriteString(ansicode.BlackBright + t.Format(timeFormat) + ansicode.Reset)
 	buf.WriteString("  " + GetLogLevelColoredString(r.Meta.Level) + "  ")
 	args := r.Args
+	for i, a := range args {
+		if colorable, ok := a.(ColorStringer); ok {
+			args[i] = colorable.ColorString()
+		}
+	}
 	if r.Format == "" {
 		fmt.Fprint(&buf, args...)
 	} else if len(args) > 0 {
@@ -57,10 +66,42 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 		buf.WriteString(r.Format)
 	}
 	for _, x := range r.Fields() {
-		fmt.Fprintf(&buf, " %s=%v ", x.Name, x.Value)
+		value := x.Value
+		if colorable, ok := value.(ColorStringer); ok {
+			value = colorable.ColorString()
+		}
+		fmt.Fprintf(&buf, " %s=%v ", HashColoredText(x.Name), value)
 	}
 	buf.WriteString("\r\n")
 	return buf.String()
+}
+
+var colorMap = []string{
+	ansicode.BlackBright,
+	ansicode.Cyan,
+	ansicode.Green,
+	ansicode.Magenta,
+}
+
+var colorMapLen = len(colorMap)
+
+func HashColoredText(name string) string {
+	const maxIterations = 10
+	l := len(name)
+	if l > 10 {
+		l = 10
+	}
+	for i, x := range name {
+		if i > maxIterations {
+			break
+		}
+		l += int(x)
+	}
+	index := l % colorMapLen
+	if index < 0 {
+		index = 0
+	}
+	return colorMap[index] + name + ansicode.Reset
 }
 
 func DefaultTextFormatter(r *Record) string {
@@ -69,11 +110,11 @@ func DefaultTextFormatter(r *Record) string {
 	buf.WriteString("," + strconv.Itoa(int(r.Meta.Level)) + ",")
 	args := r.Args
 	if r.Format == "" {
-		fmt.Fprintf(&buf, "%s", fmt.Sprint(args...))
+		fmt.Fprintf(&buf, "%q", fmt.Sprint(args...))
 	} else if len(args) > 0 {
-		fmt.Fprintf(&buf, "%s", fmt.Sprintf(r.Format, args...))
+		fmt.Fprintf(&buf, "%q", fmt.Sprintf(r.Format, args...))
 	} else {
-		fmt.Fprintf(&buf, "%s", r.Format)
+		fmt.Fprintf(&buf, "%q", r.Format)
 	}
 	ctx := r.Fields()
 	for _, x := range ctx {
@@ -106,15 +147,15 @@ func GetLogLevelColoredString(lvl Level) string {
 func GetLogLevelColoredMsg(lvl Level, msg string) string {
 	switch lvl {
 	case InfoLevel:
-		return color.BlueString(msg)
+		return ansicode.Blue + msg + ansicode.Reset
 	case WarnLevel:
-		return color.HiYellowString(msg)
+		return ansicode.YellowBright + msg + ansicode.Reset
 	case ErrorLevel:
-		return color.HiRedString(msg)
+		return ansicode.RedBright + msg + ansicode.Reset
 	case DebugLevel:
-		return color.WhiteString(msg)
+		return ansicode.White + msg + ansicode.Reset
 	case TraceLevel:
-		return color.HiBlackString(msg)
+		return ansicode.BlackBright + msg + ansicode.Reset
 	}
-	return color.HiBlackString(msg)
+	return ansicode.BlackBright + msg + ansicode.Reset
 }
