@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prasannavl/go-httpapi-base/app/responder"
+	"github.com/prasannavl/go-gluons/httputils/app/responder"
 
 	"github.com/google/uuid"
 	"github.com/prasannavl/goerror/httperror"

@@ -5,10 +5,10 @@ import (
 
 	"fmt"
 
-	"github.com/prasannavl/go-grab/log"
-	"github.com/prasannavl/go-grab/logconfig"
-	"github.com/prasannavl/go-httpapi-base/app"
-	"github.com/prasannavl/go-httpapi-base/platform"
+	"github.com/prasannavl/go-gluons/httputils/app"
+	"github.com/prasannavl/go-gluons/httputils/platform"
+	"github.com/prasannavl/go-gluons/log"
+	"github.com/prasannavl/go-gluons/logconfig"
 )
 
 func main() {

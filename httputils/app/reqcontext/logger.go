@@ -5,9 +5,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/prasannavl/go-httpapi-base/app/responder"
+	"github.com/prasannavl/go-gluons/httputils/app/responder"
 
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/goerror/errutils"
 )
 

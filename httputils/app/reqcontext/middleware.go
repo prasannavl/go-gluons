@@ -5,7 +5,7 @@ import (
 
 	chimx "github.com/go-chi/chi/middleware"
 
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 func CreateInitHandler(l *log.Logger) middleware {

@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 var ShutdownSignals = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP}

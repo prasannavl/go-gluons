@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 

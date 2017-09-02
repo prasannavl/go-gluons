@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 type AppContext struct {

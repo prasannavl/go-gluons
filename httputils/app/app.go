@@ -7,10 +7,10 @@ import (
 
 	"context"
 
-	"github.com/prasannavl/go-grab/lifecycle"
-	"github.com/prasannavl/go-grab/log"
-	"github.com/prasannavl/go-httpapi-base/app/reqcontext"
-	"github.com/prasannavl/go-httpapi-base/app/responder"
+	"github.com/prasannavl/go-gluons/httputils/app/reqcontext"
+	"github.com/prasannavl/go-gluons/httputils/app/responder"
+	"github.com/prasannavl/go-gluons/lifecycle"
+	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
 )
 
