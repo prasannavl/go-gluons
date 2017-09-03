@@ -20,7 +20,7 @@ func Send(w http.ResponseWriter, r *http.Request, value interface{}) {
 }
 
 func SendError(w http.ResponseWriter, r *http.Request, err error) {
-	if e, ok := err.(httperror.Error); ok {
+	if e, ok := err.(httperror.HttpError); ok {
 		sendHttpError(w, r, e)
 		return
 	}
@@ -42,7 +42,7 @@ func SendErrorText(w http.ResponseWriter, errOrStringer interface{}) {
 	switch e := errOrStringer.(type) {
 	case error:
 		message = e.Error()
-		if e, ok := e.(httperror.Error); ok {
+		if e, ok := e.(httperror.HttpError); ok {
 			code = e.Code()
 		}
 	case string:
@@ -58,6 +58,7 @@ func SendErrorText(w http.ResponseWriter, errOrStringer interface{}) {
 	}
 }
 
-func sendHttpError(w http.ResponseWriter, r *http.Request, err httperror.Error) {
-	SendWithStatus(w, r, err.Code(), err.Error())
+func sendHttpError(w http.ResponseWriter, r *http.Request, err httperror.HttpError) {
+	msg := err.Error()
+	SendWithStatus(w, r, err.Code(), msg)
 }
