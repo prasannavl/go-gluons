@@ -1,0 +1,5 @@
+package appx
+
+func InitTerm() {
+
+}
