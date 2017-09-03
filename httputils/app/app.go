@@ -11,7 +11,7 @@ import (
 
 	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/httputils/app/reqcontext"
-	"github.com/prasannavl/go-gluons/httputils/app/responder"
+	"github.com/prasannavl/go-gluons/httputils/responder"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
 )

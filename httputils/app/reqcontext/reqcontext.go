@@ -8,12 +8,10 @@ import (
 	"github.com/prasannavl/go-gluons/log"
 )
 
-type middleware = func(http.Handler) http.Handler
-
 type RequestContext struct {
 	RequestID uuid.UUID
 	Logger    log.Logger
-	Recovery RecoveryInfo
+	Recovery  RecoveryInfo
 }
 
 type RecoveryInfo struct {

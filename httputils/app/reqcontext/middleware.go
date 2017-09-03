@@ -10,6 +10,8 @@ import (
 	"github.com/prasannavl/go-gluons/log"
 )
 
+type middleware = func(http.Handler) http.Handler
+
 func CreateInitMiddleware(l *log.Logger) middleware {
 	m := func(next http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
