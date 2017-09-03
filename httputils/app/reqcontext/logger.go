@@ -3,51 +3,47 @@ package reqcontext
 import (
 	"fmt"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"time"
 
 	mx "github.com/go-chi/chi/middleware"
 	"github.com/prasannavl/go-gluons/ansicode"
-	"github.com/prasannavl/go-gluons/httputils/app/responder"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/goerror/errutils"
 )
 
-func CreateLogHandler(requestLogLevel log.Level) middleware {
+func CreateLogMiddleware(requestLogLevel log.Level) middleware {
 	return func(next http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
-			startTime := time.Now()
 			ww := w.(mx.WrapResponseWriter)
-			defer func() {
-				reqctx := FromRequest(r)
-				logger := &reqctx.Logger
-				if err := recover(); err != nil {
-					responder.SendErrorText(w, err)
-					stack := debug.Stack()
-					LogErrorStack(logger, err, stack)
-				}
-				sizeRaw := ww.BytesWritten()
-				if sizeRaw > 0 {
-					logger.Logf(
-						requestLogLevel,
-						"%s %v %v %s %s",
-						r.Method,
-						ColoredHttpStatus(ww.Status()),
-						ColoredDuration(time.Since(startTime)),
-						ColoredTransferSize(sizeRaw),
-						r.URL.String())
-				} else {
-					logger.Logf(
-						requestLogLevel,
-						"%s %v %v %s",
-						r.Method,
-						ColoredHttpStatus(ww.Status()),
-						ColoredDuration(time.Since(startTime)),
-						r.URL.String())
-				}
-			}()
+			startTime := time.Now()
+
 			next.ServeHTTP(w, r)
+
+			ctx := FromRequest(r)
+			logger := &ctx.Logger
+			if err := ctx.Recovery.Error; err != nil {
+				LogErrorStack(logger, err, ctx.Recovery.Stack)
+			}
+			sizeRaw := ww.BytesWritten()
+			if sizeRaw > 0 {
+				logger.Logf(
+					requestLogLevel,
+					"%s %v %v %s %s",
+					r.Method,
+					ColoredHttpStatus(ww.Status()),
+					ColoredDuration(time.Since(startTime)),
+					ColoredTransferSize(sizeRaw),
+					r.URL.String())
+			} else {
+				logger.Logf(
+					requestLogLevel,
+					"%s %v %v %s",
+					r.Method,
+					ColoredHttpStatus(ww.Status()),
+					ColoredDuration(time.Since(startTime)),
+					r.URL.String())
+			}
 		}
 		return http.HandlerFunc(f)
 	}
@@ -79,8 +75,8 @@ type ColoredTransferSize int
 
 var sizeColors = [...]string{
 	ansicode.BlackBright,
-	ansicode.Yellow,
-	ansicode.Red,
+	ansicode.YellowBright,
+	ansicode.RedBright,
 }
 
 var sizeColorsLen = len(statusColors)
@@ -91,10 +87,10 @@ const (
 
 var sizeColorLimits = [...]int{80 * sizeKB, 400 * sizeKB}
 
-func (self ColoredTransferSize) ColorString() string {
-	str := sizeString(int(self))
+func (c ColoredTransferSize) ColorString() string {
+	str := sizeString(int(c))
 	index := 0
-	current := int(self)
+	current := int(c)
 	for _, limit := range sizeColorLimits {
 		if current > limit {
 			index++
@@ -108,7 +104,7 @@ func (self ColoredTransferSize) ColorString() string {
 	return sizeColors[index] + str + ansicode.Reset
 }
 
-var sizeSuffixes = [...]string{"B", "KB", "MB", "GB"}
+var sizeSuffixes = [...]string{"b", "kb", "mb", "gb"}
 
 func sizeString(size int) string {
 	index := 0
@@ -131,15 +127,15 @@ func sizeString(size int) string {
 
 type ColoredHttpStatus int
 
-func (self ColoredHttpStatus) ColorString() string {
-	return coloredStatusIntString(int(self))
+func (c ColoredHttpStatus) ColorString() string {
+	return coloredStatusIntString(int(c))
 }
 
 var statusColors = [...]string{
-	ansicode.Cyan,
+	ansicode.CyanBright,
 	ansicode.Green,
-	ansicode.Magenta,
-	ansicode.Yellow,
+	ansicode.MagentaBright,
+	ansicode.YellowBright,
 	ansicode.RedBright,
 }
 
@@ -157,13 +153,13 @@ func coloredStatusIntString(code int) string {
 
 type ColoredDuration time.Duration
 
-func (self ColoredDuration) ColorString() string {
-	return coloredTimeString(time.Duration(self))
+func (c ColoredDuration) ColorString() string {
+	return coloredTimeString(time.Duration(c))
 }
 
 var timeColors = [...]string{
 	ansicode.BlackBright,
-	ansicode.Yellow,
+	ansicode.YellowBright,
 	ansicode.RedBright,
 	ansicode.Red,
 	ansicode.RedBrightBg + ansicode.White,

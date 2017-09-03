@@ -9,9 +9,9 @@ import (
 
 	stdlog "log"
 
+	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/httputils/app/reqcontext"
 	"github.com/prasannavl/go-gluons/httputils/app/responder"
-	"github.com/prasannavl/go-gluons/lifecycle"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
 )
@@ -26,8 +26,9 @@ func newAppHandler(c *AppContext) http.Handler {
 	b := builder.CreateHttp()
 
 	b.Add(
-		reqcontext.CreateInitHandler(c.Logger),
-		reqcontext.CreateLogHandler(log.InfoLevel),
+		reqcontext.CreateInitMiddleware(c.Logger),
+		reqcontext.CreateLogMiddleware(log.InfoLevel),
+		reqcontext.CreateRecoveryMiddleware(nil, nil),
 		reqcontext.CreateRequestIDHandler(false),
 	)
 
@@ -68,9 +69,9 @@ func Run(logger *log.Logger, addr string) {
 		ErrorLog:       stdErrLog,
 		MaxHeaderBytes: 1 << 20}
 
-	lifecycle.CreateShutdownHandler(func() {
+	appx.CreateShutdownHandler(func() {
 		server.Shutdown(context.Background())
-	}, lifecycle.ShutdownSignals...)
+	}, appx.ShutdownSignals...)
 
 	err := server.ListenAndServe()
 	if err != http.ErrServerClosed {

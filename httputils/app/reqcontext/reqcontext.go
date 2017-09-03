@@ -13,6 +13,12 @@ type middleware = func(http.Handler) http.Handler
 type RequestContext struct {
 	RequestID uuid.UUID
 	Logger    log.Logger
+	Recovery RecoveryInfo
+}
+
+type RecoveryInfo struct {
+	Error interface{}
+	Stack []byte
 }
 
 type requestContextKey struct{}
