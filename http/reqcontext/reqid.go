@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prasannavl/go-gluons/httputils/responder"
+	"github.com/prasannavl/mchain"
 
 	"github.com/google/uuid"
 	"github.com/prasannavl/goerror/httperror"
@@ -12,35 +12,33 @@ import (
 
 const RequestIDHeaderKey = "X-Request-Id"
 
-func CreateRequestIDHandler(reuseUpstreamID bool) middleware {
+func CreateRequestIDHandler(reuseUpstreamID bool) mchain.Middleware {
 	if reuseUpstreamID {
 		return RequestIDInitOrReuseHandler
 	}
 	return RequestIDInitOrFailHandler
 }
 
-func RequestIDInitOrFailHandler(next http.Handler) http.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) {
+func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) error {
 		err := requestIDInitOrFailHandler(r, FromRequest(r))
 		if err != nil {
-			responder.SendErrorText(w, err)
-			return
+			return err
 		}
-		next.ServeHTTP(w, r)
+		return next.ServeHTTP(w, r)
 	}
-	return http.HandlerFunc(f)
+	return mchain.HandlerFunc(f)
 }
 
-func RequestIDInitOrReuseHandler(next http.Handler) http.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) {
+func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) error {
 		err := requestIDInitOrReuseHandler(r, FromRequest(r))
 		if err != nil {
-			responder.SendErrorText(w, err)
-			return
+			return err
 		}
-		next.ServeHTTP(w, r)
+		return next.ServeHTTP(w, r)
 	}
-	return http.HandlerFunc(f)
+	return mchain.HandlerFunc(f)
 }
 
 func requestIDInitOrFailHandler(r *http.Request, c *RequestContext) error {

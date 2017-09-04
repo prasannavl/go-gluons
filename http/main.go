@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/prasannavl/go-gluons/appx"
-	"github.com/prasannavl/go-gluons/httputils/app"
+	"github.com/prasannavl/go-gluons/http/app"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/go-gluons/logconfig"
 )

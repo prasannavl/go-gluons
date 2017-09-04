@@ -4,22 +4,30 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prasannavl/go-grab/log"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 func TestPrint(t *testing.T) {
+
 	rec := log.CreateMultiSink(
 		&log.LeveledSink{
 			MaxLevel: log.InfoLevel,
-			Target: &log.StreamSink{
-				Formatter: log.DefaultColorTextFormatterForHuman,
+			Inner: &log.StreamSink{
+				Formatter: log.DefaultTextFormatterForHuman,
+				Stream:    os.Stdout,
+			},
+		},
+		&log.LeveledSink{
+			MaxLevel: log.ErrorLevel,
+			Inner: &log.StreamSink{
+				Formatter: log.DefaultTextFormatter,
 				Stream:    os.Stdout,
 			},
 		},
 	)
 
 	l := log.New(rec)
-	log.SetGlobal(l)
+	log.SetLogger(l)
 
 	log.Info("Hello there 1")
 	log.Warn("Hello there 2")

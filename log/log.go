@@ -71,7 +71,7 @@ func (l Logger) Log(lvl Level, message string) {
 	l.Logf(lvl, message)
 }
 
-func (l Logger) LogV(lvl Level, args ...interface{}) {
+func (l Logger) Logv(lvl Level, args ...interface{}) {
 	l.Logf(lvl, "", args...)
 }
 
@@ -95,24 +95,24 @@ func (l Logger) Trace(message string) {
 	l.Log(TraceLevel, message)
 }
 
-func (l Logger) InfoV(args ...interface{}) {
-	l.LogV(InfoLevel, args...)
+func (l Logger) Infov(args ...interface{}) {
+	l.Logv(InfoLevel, args...)
 }
 
 func (l Logger) WarnV(args ...interface{}) {
-	l.LogV(WarnLevel, args...)
+	l.Logv(WarnLevel, args...)
 }
 
-func (l Logger) ErrorV(args ...interface{}) {
-	l.LogV(ErrorLevel, args...)
+func (l Logger) Errorv(args ...interface{}) {
+	l.Logv(ErrorLevel, args...)
 }
 
-func (l Logger) DebugV(args ...interface{}) {
-	l.LogV(DebugLevel, args...)
+func (l Logger) Debugv(args ...interface{}) {
+	l.Logv(DebugLevel, args...)
 }
 
-func (l Logger) TraceV(args ...interface{}) {
-	l.LogV(TraceLevel, args...)
+func (l Logger) Tracev(args ...interface{}) {
+	l.Logv(TraceLevel, args...)
 }
 
 func (l Logger) Infof(format string, args ...interface{}) {
@@ -165,8 +165,8 @@ func Log(lvl Level, message string) {
 	g.Log(lvl, message)
 }
 
-func LogV(lvl Level, args ...interface{}) {
-	g.LogV(lvl, args...)
+func Logv(lvl Level, args ...interface{}) {
+	g.Logv(lvl, args...)
 }
 
 func Info(message string) {
@@ -189,24 +189,24 @@ func Trace(message string) {
 	g.Trace(message)
 }
 
-func InfoV(args ...interface{}) {
-	g.InfoV(args...)
+func Infov(args ...interface{}) {
+	g.Infov(args...)
 }
 
 func WarnV(args ...interface{}) {
 	g.WarnV(args...)
 }
 
-func ErrorV(args ...interface{}) {
-	g.ErrorV(args...)
+func Errorv(args ...interface{}) {
+	g.Errorv(args...)
 }
 
-func DebugV(args ...interface{}) {
-	g.DebugV(args...)
+func Debugv(args ...interface{}) {
+	g.Debugv(args...)
 }
 
-func TraceV(args ...interface{}) {
-	g.TraceV(args...)
+func Tracev(args ...interface{}) {
+	g.Tracev(args...)
 }
 
 func Infof(format string, args ...interface{}) {

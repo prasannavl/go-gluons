@@ -9,15 +9,12 @@ import (
 )
 
 type RequestContext struct {
-	RequestID uuid.UUID
-	Logger    log.Logger
-	Recovery  RecoveryInfo
+	RequestID   uuid.UUID
+	Logger      log.Logger
+	ErrorStacks []errorStack
 }
 
-type RecoveryInfo struct {
-	Error interface{}
-	Stack []byte
-}
+type errorStack = []byte
 
 type requestContextKey struct{}
 

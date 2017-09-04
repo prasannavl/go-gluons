@@ -6,30 +6,29 @@ import (
 	"strconv"
 	"time"
 
-	mx "github.com/go-chi/chi/middleware"
 	"github.com/prasannavl/go-gluons/ansicode"
+	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/goerror/errutils"
+	"github.com/prasannavl/mchain"
 )
 
-func CreateLogMiddleware(requestLogLevel log.Level) middleware {
-	return func(next http.Handler) http.Handler {
-		f := func(w http.ResponseWriter, r *http.Request) {
-			ww := w.(mx.WrapResponseWriter)
+func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
+	return func(next mchain.Handler) mchain.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) error {
+			ww := w.(writer.ResponseWriter)
 			startTime := time.Now()
-
-			next.ServeHTTP(w, r)
-
+			err := next.ServeHTTP(w, r)
 			ctx := FromRequest(r)
-			logger := &ctx.Logger
-			if err := ctx.Recovery.Error; err != nil {
-				LogErrorStack(logger, err, ctx.Recovery.Stack)
+			if err != nil {
+				LogErrorStack(&ctx.Logger, ctx.ErrorStacks...)
 			}
+			logger := &ctx.Logger
 			sizeRaw := ww.BytesWritten()
 			if sizeRaw > 0 {
 				logger.Logf(
 					requestLogLevel,
-					"%s %v %v %s %s",
+					"%s %v %v %v %s",
 					r.Method,
 					ColoredHttpStatus(ww.Status()),
 					ColoredDuration(time.Since(startTime)),
@@ -44,8 +43,9 @@ func CreateLogMiddleware(requestLogLevel log.Level) middleware {
 					ColoredDuration(time.Since(startTime)),
 					r.URL.String())
 			}
+			return nil
 		}
-		return http.HandlerFunc(f)
+		return mchain.HandlerFunc(f)
 	}
 }
 
@@ -64,10 +64,13 @@ func LogError(logger *log.Logger, e interface{}) {
 	}
 }
 
-func LogErrorStack(logger *log.Logger, err interface{}, stack []byte) {
-	LogError(logger, err)
-	if len(stack) > 0 {
-		logger.Errorf("[[stack]]\r\n%s[[stack:end]]\r\n", stack)
+func LogErrorStack(logger *log.Logger, stacks ...[]byte) {
+	var i = 0
+	for _, stack := range stacks {
+		if len(stack) > 0 {
+			logger.Errorf("[[stack-%d]]\r\n%s[[stack:end]]\r\n", i, stack)
+			i++
+		}
 	}
 }
 

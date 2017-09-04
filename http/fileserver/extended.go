@@ -7,7 +7,8 @@ import (
 
 	"github.com/prasannavl/goerror/httperror"
 
-	"github.com/prasannavl/go-gluons/httputils/responder"
+	"github.com/prasannavl/go-gluons/http/responder"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 func New(root http.FileSystem, templatesBasePath string) http.Handler {
@@ -28,6 +29,12 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := ServeRequestPath(w, r, f.root)
 	if err != nil {
 		e := err.(*Err)
+
+		log.With("path", r.URL.Path).
+			With("status", e.StatusHint).
+			With("cause", e.Cause).
+			Warnf("fileserver: %v %v", e, e.Data)
+
 		switch e.Kind {
 		case ErrFsStat, ErrFsOpen:
 			responder.Send(w, r, &responder.TemplateFilesContent{
