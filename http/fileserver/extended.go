@@ -6,26 +6,40 @@ import (
 	"strconv"
 
 	"github.com/prasannavl/goerror/httperror"
+	"github.com/prasannavl/mchain"
 
 	"github.com/prasannavl/go-gluons/http/responder"
 	"github.com/prasannavl/go-gluons/log"
 )
 
-func New(root http.FileSystem, templatesBasePath string) http.Handler {
-	return &FileServerEx{root, templatesBasePath, ".html"}
+func New(root http.FileSystem) mchain.Handler {
+	return &FileServer{root}
+}
+
+type FileServer struct {
+	root http.FileSystem
+}
+
+func (f *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	err := ServeRequestPath(w, r, f.root)
+	if err != nil {
+		e := err.(*Err)
+		return httperror.NewWithCause(e.StatusHint, "fileserver error", e, false)
+	}
+	return nil
+}
+
+func NewEx(root http.FileSystem, errorTemplatesRoot string) mchain.Handler {
+	return &FileServerEx{FileServer{root}, errorTemplatesRoot, ".html"}
 }
 
 type FileServerEx struct {
-	root              http.FileSystem
-	templatesBasePath string
-	templatesSuffix   string
+	FileServer
+	ErrorTemplatesRoot string
+	TemplateSuffix     string
 }
 
-func statusCodeFromHint(hint int) string {
-	return strconv.Itoa(httperror.ErrorCode(hint))
-}
-
-func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	err := ServeRequestPath(w, r, f.root)
 	if err != nil {
 		e := err.(*Err)
@@ -37,14 +51,13 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		switch e.Kind {
 		case ErrFsStat, ErrFsOpen:
-			responder.Send(w, r, &responder.TemplateFilesContent{
-				Data: e.Error(),
-				TemplateFiles: []string{filepath.Join(f.templatesBasePath,
-					statusCodeFromHint(e.StatusHint)+f.templatesSuffix)}})
+			t := errToTemplate(e, f.ErrorTemplatesRoot, f.TemplateSuffix)
+			responder.SendWithStatus(w, r,
+				httperror.ErrorCode(e.StatusHint), &t)
 		case ErrRedirect:
-			LocalRedirect(w, r, e.Data.(string))
+			localRedirect(w, r, e.Data.(string))
 		case ErrDirFound:
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return httperror.NewWithCause(e.StatusHint, "fileserver: directory listing disabled", e, false)
 			//  Alternatively, handle the dir listing.
 
 			//	f := e.Data.(http.File)
@@ -54,4 +67,16 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			//	}
 		}
 	}
+	return err
+}
+
+func statusCodeFromHint(hint int) string {
+	return strconv.Itoa(httperror.ErrorCode(hint))
+}
+
+func errToTemplate(e *Err, errorTemplatesPath string, templateSuffix string) responder.TemplateFilesContent {
+	return responder.TemplateFilesContent{
+		Data: e.Error(),
+		TemplateFiles: []string{
+			filepath.Join(errorTemplatesPath, statusCodeFromHint(e.StatusHint)+templateSuffix)}}
 }

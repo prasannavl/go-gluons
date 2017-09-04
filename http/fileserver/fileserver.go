@@ -8,15 +8,15 @@ import (
 	"time"
 )
 
-func FileServer(root http.FileSystem) http.Handler {
-	return &fileHandler{root}
+func HttpFileServer(root http.FileSystem) http.Handler {
+	return &httpFileHandler{root}
 }
 
-type fileHandler struct {
+type httpFileHandler struct {
 	root http.FileSystem
 }
 
-func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *httpFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := ServeRequestPath(w, r, f.root)
 	if err != nil {
 		e := err.(*Err)
@@ -24,7 +24,7 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case ErrBadRequest, ErrFsStat, ErrFsOpen:
 			http.Error(w, e.Error(), e.StatusHint)
 		case ErrRedirect:
-			LocalRedirect(w, r, e.Data.(string))
+			localRedirect(w, r, e.Data.(string))
 		case ErrDirFound:
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			//  Alternatively, handle the dir listing.
@@ -64,6 +64,19 @@ func ServeFile(w http.ResponseWriter, r *http.Request, name string) error {
 	return serveFile(w, r, http.Dir(dir), file, false)
 }
 
+func HandleDirPrelude(w http.ResponseWriter, r *http.Request, dir http.File) (finished bool) {
+	// Note: the error is ignored for now, since this already would have been executed
+	// in before. If there's an issue here, something has gone seriously wrong,
+	// in which case, we panic anyway.
+	d, _ := dir.Stat()
+	if checkIfModifiedSince(r, d.ModTime()) == condFalse {
+		writeNotModified(w)
+		return true
+	}
+	w.Header().Set("Last-Modified", d.ModTime().UTC().Format(http.TimeFormat))
+	return false
+}
+
 func containsDotDot(v string) bool {
 	if !strings.Contains(v, "..") {
 		return false
@@ -97,7 +110,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 		return &Err{
 			Kind:       ErrFsOpen,
 			StatusHint: http.StatusNotFound,
-			Cause:      err,
+			Inner:      err,
 		}
 	}
 	defer f.Close()
@@ -107,7 +120,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 		return &Err{
 			Kind:       ErrFsStat,
 			StatusHint: http.StatusInternalServerError,
-			Cause:      err,
+			Inner:      err,
 		}
 	}
 
@@ -163,7 +176,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 		return &Err{
 			Kind:       ErrDirFound,
 			Data:       f,
-			StatusHint: 0,
+			StatusHint: http.StatusForbidden,
 		}
 	}
 
@@ -171,27 +184,14 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 	return nil
 }
 
-// LocalRedirect gives a Moved Permanently response.
+// localRedirect gives a Moved Permanently response.
 // It does not convert relative paths to absolute paths like Redirect does.
-func LocalRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
+func localRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
 	if q := r.URL.RawQuery; q != "" {
 		newPath += "?" + q
 	}
 	w.Header().Set("Location", newPath)
 	w.WriteHeader(http.StatusMovedPermanently)
-}
-
-func HandleDirPrelude(w http.ResponseWriter, r *http.Request, dir http.File) (finished bool) {
-	// Note: the error is ignored for now, since this already would have been executed
-	// in before. If there's an issue here, something has gone seriously wrong,
-	// in which case, we panic anyway.
-	d, _ := dir.Stat()
-	if checkIfModifiedSince(r, d.ModTime()) == condFalse {
-		writeNotModified(w)
-		return true
-	}
-	w.Header().Set("Last-Modified", d.ModTime().UTC().Format(http.TimeFormat))
-	return false
 }
 
 // condResult is the result of an HTTP request precondition check.
@@ -260,7 +260,11 @@ type Err struct {
 	Kind       fileServerErrorKind
 	StatusHint int
 	Data       interface{}
-	Cause      error
+	Inner      error
+}
+
+func (f *Err) Cause() error {
+	return f.Inner
 }
 
 func (f *Err) Error() string {
