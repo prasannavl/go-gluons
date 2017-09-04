@@ -71,6 +71,7 @@ func (b *BasicWriter) FlushHeaders() {
 }
 
 func (b *BasicWriter) Write(buf []byte) (int, error) {
+	b.FlushHeaders()
 	n, err := b.ResponseWriter.Write(buf)
 	if b.tee != nil {
 		_, err2 := b.tee.Write(buf)
