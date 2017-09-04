@@ -46,7 +46,7 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 
 		log.With("path", r.URL.Path).
 			With("status", e.StatusHint).
-			With("cause", e.Cause).
+			With("cause", e.Cause()).
 			Warnf("fileserver: %v %v", e, e.Data)
 
 		switch e.Kind {

@@ -12,9 +12,11 @@ func CreateInitMiddleware(l *log.Logger) mchain.Middleware {
 	m := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
 			ww := writer.NewResponseWriter(w, r.ProtoMajor)
-			return next.ServeHTTP(ww, WithRequestContext(r, &RequestContext{
+			defer ww.Flush()
+			err := next.ServeHTTP(ww, WithRequestContext(r, &RequestContext{
 				Logger: *l,
 			}))
+			return err
 		}
 		return mchain.HandlerFunc(f)
 	}
