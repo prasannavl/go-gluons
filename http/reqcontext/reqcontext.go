@@ -9,9 +9,9 @@ import (
 )
 
 type RequestContext struct {
-	RequestID   uuid.UUID
-	Logger      log.Logger
-	ErrorStacks []errorStack
+	RequestID        uuid.UUID
+	Logger           log.Logger
+	ErrorStacks      []errorStack
 }
 
 type errorStack = []byte
