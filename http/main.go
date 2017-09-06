@@ -35,6 +35,12 @@ func main() {
 
 	flag.Parse()
 
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorv(err)
+		}
+	}()
+
 	if displayVersion {
 		printPackageHeader(true)
 		return
