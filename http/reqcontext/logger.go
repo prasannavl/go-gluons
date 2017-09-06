@@ -57,7 +57,9 @@ func LogError(logger *log.Logger, e interface{}) {
 			if e == nil {
 				break
 			}
-			logger.Errorf("cause: %s => %#v ", e.Error(), e)
+			if errutils.HasMessage(e) {
+				logger.Errorf("cause: %s => %#v ", e.Error(), e)	
+			}
 		}
 	} else {
 		logger.Errorf("%#v", e)

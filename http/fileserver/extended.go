@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/prasannavl/goerror/errutils"
+
 	"github.com/prasannavl/goerror/httperror"
 	"github.com/prasannavl/mchain"
 
@@ -37,10 +39,12 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		e := err.(*Err)
 
-		log.With("path", r.URL.Path).
-			With("status", e.Code()).
-			With("cause", e.Cause()).
-			Warnf("fileserver: %v %v", e, e.Data)
+		l := log.With("path", r.URL.Path).
+			With("status", e.Code())
+		if !errutils.HasMessage(e) {
+			l = l.With("cause", e.Cause())
+		}
+		l.Warnf("fileserver: %v %v", e, e.Data)
 
 		switch e.Kind {
 		case ErrRedirect:
