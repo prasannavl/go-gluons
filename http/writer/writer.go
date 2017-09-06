@@ -91,6 +91,9 @@ func (b *BasicWriter) Write(buf []byte) (int, error) {
 }
 
 func (b *BasicWriter) Status() int {
+	// if b.code == 0 {
+	// 	return 200
+	// }
 	return b.code
 }
 
