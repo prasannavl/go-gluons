@@ -1,4 +1,4 @@
-package hutils
+package utils
 
 import (
 	"net/http"
@@ -20,9 +20,9 @@ func RunOnPrefixAndRedirectToSlash(prefix string, h mchain.Handler, w http.Respo
 		if r.URL.Path == prefix {
 			path := r.URL.Host + middleware.ConstructPathFromStripped(r) + "/"
 			if r.URL.RawQuery != "" {
-				path += "?" + r.URL.Query().Encode()
+				path += "?" + r.URL.RawQuery
 			}
-			http.RedirectHandler(
+			RedirectHandler(
 				path,
 				http.StatusMovedPermanently).ServeHTTP(w, r)
 			return true, nil
