@@ -5,18 +5,17 @@ import (
 
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/http/hutils"
+	"github.com/prasannavl/go-gluons/http/utils"
 )
 
 func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := hutils.RunOnPrefix(prefix, h, w, r)
+			done, err := utils.RunOnPrefix(prefix, h, w, r)
 			if done {
 				return err
-			} else {
-				return next.ServeHTTP(w, r)
 			}
+			return next.ServeHTTP(w, r)
 		}
 		return mchain.HandlerFunc(f)
 	}
@@ -26,12 +25,11 @@ func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 func MountRedirectToSlashed(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := hutils.RunOnPrefixAndRedirectToSlash(prefix, h, w, r)
+			done, err := utils.RunOnPrefixAndRedirectToSlash(prefix, h, w, r)
 			if done {
 				return err
-			} else {
-				return next.ServeHTTP(w, r)
 			}
+			return next.ServeHTTP(w, r)
 		}
 		return mchain.HandlerFunc(f)
 	}
