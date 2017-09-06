@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "http",
+      "name": "app-http",
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "${workspaceRoot}/http",
+      "program": "${workspaceRoot}/http/app-http",
       "args": ["-vvv"]
     }
   ]

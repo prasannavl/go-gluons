@@ -48,12 +48,12 @@ func newAppHandler(c *AppContext) http.Handler {
 		chainutils.Mount("/api", hconv.FromHttp(gotalk.WebSocketHandler())),
 	)
 
-	b.Handler(fileserver.NewEx(http.Dir("./app/www"), NotFoundHandler))
+	b.Handler(fileserver.NewEx(http.Dir("./www"), NotFoundHandler))
 	return b.BuildHttp(nil)
 }
 
 func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
-	f, err := os.Open("./app/www/error/404.html")
+	f, err := os.Open("./www/error/404.html")
 	if err != nil {
 		return err
 	}
