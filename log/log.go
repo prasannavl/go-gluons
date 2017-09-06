@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"time"
 )
 
@@ -246,7 +247,13 @@ var (
 )
 
 func init() {
-	g = &Logger{sink: NopSink{}}
+	g = &Logger{sink: &LeveledSink{
+		MaxLevel: ErrorLevel,
+		Inner: &StreamSink {
+			Stream: os.Stderr,
+			Formatter: DefaultColorTextFormatterForHuman,
+		},
+	}}
 }
 
 func SetLogger(l *Logger) {
