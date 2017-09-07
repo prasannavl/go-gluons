@@ -81,6 +81,7 @@ func Run(logger *log.Logger, addr string) {
 	server := &http.Server{
 		Addr:           c.ServerAddress,
 		Handler:        a,
+		IdleTimeout:    20 * time.Second,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		ErrorLog:       stdErrLog,
