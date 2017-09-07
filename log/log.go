@@ -19,6 +19,7 @@ const (
 type Logger struct {
 	sink   Sink
 	fields []Field
+	filter func(Level) bool
 }
 
 type Record struct {
@@ -48,24 +49,19 @@ func newRecord(l Logger, m Metadata, format string, args []interface{}) Record {
 	return Record{l: l, Meta: m, Format: format, Args: args}
 }
 
-func newMetadata(lvl Level, withTime bool) Metadata {
-	if withTime {
-		return Metadata{Level: lvl, Time: time.Now()}
-	}
-	return Metadata{Level: lvl}
-}
-
-func (l Logger) IsEnabled(lvl Level) bool {
-	m := newMetadata(lvl, false)
-	return l.sink.IsEnabled(&m)
+func newMetadata(lvl Level) Metadata {
+	return Metadata{Level: lvl, Time: time.Now()}
 }
 
 func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
-	if !l.IsEnabled(lvl) {
-		return
+	if l.IsEnabled(lvl) {
+		r := newRecord(l, newMetadata(lvl), format, args)
+		l.sink.Log(&r)
 	}
-	r := newRecord(l, newMetadata(lvl, true), format, args)
-	l.sink.Log(&r)
+}
+
+func (l Logger) IsEnabled(lvl Level) bool {
+	return l.filter(lvl)
 }
 
 func (l Logger) Log(lvl Level, message string) {
@@ -144,18 +140,14 @@ func (l Logger) With(name string, value interface{}) Logger {
 	s := make([]Field, 0, len(l.fields)+1)
 	s = append(s, l.fields...)
 	s = append(s, Field{name, value})
-	return Logger{l.sink, s}
+	return Logger{l.sink, s, l.filter}
 }
 
 func (l Logger) WithFields(fields []Field) Logger {
 	s := make([]Field, 0, len(l.fields)+len(fields))
 	s = append(s, l.fields...)
 	s = append(s, fields...)
-	return Logger{l.sink, s}
-}
-
-func IsEnabled(lvl Level) bool {
-	return g.IsEnabled(lvl)
+	return Logger{l.sink, s, l.filter}
 }
 
 func Logf(lvl Level, format string, args ...interface{}) {
@@ -247,13 +239,12 @@ var (
 )
 
 func init() {
-	g = &Logger{sink: &LeveledSink{
-		MaxLevel: ErrorLevel,
-		Inner: &StreamSink {
-			Stream: os.Stderr,
+	g = &Logger{
+		sink: &StreamSink{
+			Stream:    os.Stderr,
 			Formatter: DefaultColorTextFormatterForHuman,
 		},
-	}}
+	}
 }
 
 func SetLogger(l *Logger) {
@@ -265,9 +256,36 @@ func GetLogger() *Logger {
 }
 
 func New(sink Sink) *Logger {
-	return &Logger{sink, nil}
+	return &Logger{sink, nil, AllLevelsFilter}
 }
 
 func GetSink(logger *Logger) Sink {
 	return logger.sink
+}
+
+func SetFilter(logger *Logger, filter func(Level) bool) {
+	if filter == nil {
+		filter = AllLevelsFilter
+	}
+	logger.filter = filter
+}
+
+func DisabledFilter(lvl Level) bool {
+	return false
+}
+
+func AllLevelsFilter(lvl Level) bool {
+	return true
+}
+
+func ErrorLevelFilter(lvl Level) bool {
+	return lvl <= ErrorLevel
+}
+
+func InfoLevelFilter(lvl Level) bool {
+	return lvl <= InfoLevel
+}
+
+func TraceLevelFilter(lvl Level) bool {
+	return lvl <= TraceLevel
 }

@@ -9,7 +9,7 @@ import (
 
 func TestPrint(t *testing.T) {
 
-	rec := log.CreateMultiSink(
+	sink := log.CreateMultiSink(
 		&log.LeveledSink{
 			MaxLevel: log.InfoLevel,
 			Inner: &log.StreamSink{
@@ -26,7 +26,7 @@ func TestPrint(t *testing.T) {
 		},
 	)
 
-	l := log.New(rec)
+	l := log.New(sink)
 	log.SetLogger(l)
 
 	log.Info("Hello there 1")
