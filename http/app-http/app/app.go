@@ -10,7 +10,6 @@ import (
 
 	"github.com/prasannavl/go-gluons/http/chainutils"
 	"github.com/prasannavl/go-gluons/http/gosock"
-	"github.com/rsms/gotalk"
 
 	"context"
 
@@ -39,7 +38,7 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 
 func newAppHandler(c *AppContext) http.Handler {
 	apiHandlers := apiHandlers(c)
-	wss := gosock.NewWebSocketServer(apiHandlers, gotalk.NewLimits(1000, 1000), nil)
+	wss := gosock.NewWebSocketServer(apiHandlers)
 
 	b := builder.Create()
 

@@ -65,15 +65,39 @@ type WebSocketServer struct {
 	upgrader websocket.Upgrader
 }
 
-func NewWebSocketServer(handlers *gotalk.Handlers, limits gotalk.Limits, onAccept gotalk.SockHandler) *WebSocketServer {
-	ws := &WebSocketServer{
-		limits:   limits,
-		handlers: handlers,
-		onAccept: onAccept,
+type WebSocketServerOptions struct {
+	Limits            gotalk.Limits
+	OnAccept          gotalk.SockHandler
+	HeartbeatInterval time.Duration
+	OnHeartbeat       func(load int, t time.Time)
+	Upgrader          websocket.Upgrader
+}
+
+func DefaultWebSocketServerOptions() WebSocketServerOptions {
+	return WebSocketServerOptions{
+		Limits: gotalk.NewLimits(^uint32(0), ^uint32(0)),
+		Upgrader: websocket.Upgrader{
+			EnableCompression: true,
+			HandshakeTimeout:  8 * time.Second,
+			ReadBufferSize:    1024,
+			WriteBufferSize:   1024,
+		},
 	}
-	ws.upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+}
+
+func NewWebSocketServer(handlers *gotalk.Handlers) *WebSocketServer {
+	opts := DefaultWebSocketServerOptions()
+	return NewWebSocketServerWithOptions(handlers, &opts)
+}
+
+func NewWebSocketServerWithOptions(handlers *gotalk.Handlers, opts *WebSocketServerOptions) *WebSocketServer {
+	ws := &WebSocketServer{
+		limits:            opts.Limits,
+		handlers:          handlers,
+		onAccept:          opts.OnAccept,
+		heartbeatInterval: opts.HeartbeatInterval,
+		onHeartbeat:       opts.OnHeartbeat,
+		upgrader:          opts.Upgrader,
 	}
 	return ws
 }
