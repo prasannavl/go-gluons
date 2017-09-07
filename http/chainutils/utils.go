@@ -8,10 +8,52 @@ import (
 	"github.com/prasannavl/go-gluons/http/utils"
 )
 
+func Hook(h mchain.Handler) mchain.Middleware {
+	hh := func(next mchain.Handler) mchain.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) error {
+			err := h.ServeHTTP(w, r)
+			if err != nil {
+				return err
+			}
+			return next.ServeHTTP(w, r)
+		}
+		return mchain.HandlerFunc(f)
+	}
+	return hh
+}
+
+func Run(h mchain.Handler) mchain.Middleware {
+	hh := func(next mchain.Handler) mchain.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) error {
+			return h.ServeHTTP(w, r)
+		}
+		return mchain.HandlerFunc(f)
+	}
+	return hh
+}
+
+func OnPrefix(prefix string, h mchain.Handler) mchain.Middleware {
+	hh := func(next mchain.Handler) mchain.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) error {
+			done, err := utils.OnPrefix(prefix, h, w, r)
+			if done {
+				return err
+			}
+			return next.ServeHTTP(w, r)
+		}
+		return mchain.HandlerFunc(f)
+	}
+	return hh
+}
+
+func OnPrefixFunc(prefix string, h mchain.HandlerFunc) mchain.Middleware {
+	return OnPrefix(prefix, mchain.HandlerFunc(h))
+}
+
 func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := utils.RunOnPrefix(prefix, h, w, r)
+			done, err := utils.OnStrippedPrefix(prefix, h, w, r)
 			if done {
 				return err
 			}
@@ -25,7 +67,7 @@ func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 func MountRedirectToSlashed(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := utils.RunOnPrefixAndRedirectToSlash(prefix, h, w, r)
+			done, err := utils.OnStrippedPrefixAndRedirectToSlash(prefix, h, w, r)
 			if done {
 				return err
 			}
