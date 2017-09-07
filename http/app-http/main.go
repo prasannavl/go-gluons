@@ -1,12 +1,17 @@
 package main
 
 import (
+	"net"
+
 	flag "github.com/spf13/pflag"
 
 	"fmt"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/prasannavl/go-gluons/appx"
-	"github.com/prasannavl/go-gluons/http/app"
+	"github.com/prasannavl/go-gluons/http/app-http/app"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/go-gluons/logconfig"
 )
@@ -56,6 +61,7 @@ func main() {
 		logconfig.Init(&logOpts, &logInitResult)
 	}
 	log.Infof("listen-address: %q", addr)
+	enableProfiler()
 	app.Run(logInitResult.Logger, addr)
 }
 
@@ -65,4 +71,15 @@ func printPackageHeader(versionOnly bool) {
 	} else {
 		fmt.Printf("%s\t%s\r\n", app.Package, app.Version)
 	}
+}
+
+func enableProfiler() {
+	go func() {
+		l, err := net.Listen("tcp", "localhost:9090")
+		if err != nil {
+			log.Errorf("pprof-listener: %v", err)
+		}
+		log.Infof("pprof endpoint: %s", l.Addr())
+		http.Serve(l, nil)
+	}()
 }

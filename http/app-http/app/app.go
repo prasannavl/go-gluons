@@ -1,25 +1,28 @@
 package app
 
 import (
+	"crypto/tls"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/prasannavl/go-gluons/http/chainutils"
+	"github.com/prasannavl/go-gluons/http/gosock"
+	"github.com/rsms/gotalk"
+
 	"context"
 
 	stdlog "log"
 
 	"github.com/prasannavl/go-gluons/appx"
-	"github.com/prasannavl/go-gluons/http/chainutils"
+	"github.com/prasannavl/go-gluons/cert"
 	"github.com/prasannavl/go-gluons/http/fileserver"
 	"github.com/prasannavl/go-gluons/http/middleware"
 	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
-	"github.com/prasannavl/mchain/hconv"
-	"github.com/rsms/gotalk"
 )
 
 func createAppContext(logger *log.Logger, addr string) *AppContext {
@@ -35,9 +38,10 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 }
 
 func newAppHandler(c *AppContext) http.Handler {
-	b := builder.Create()
+	apiHandlers := apiHandlers(c)
+	wss := gosock.NewWebSocketServer(apiHandlers, gotalk.NewLimits(1000, 1000), nil)
 
-	// api := gotalk.NewHandlers()
+	b := builder.Create()
 
 	b.Add(
 		reqcontext.CreateInitMiddleware(c.Logger),
@@ -45,7 +49,8 @@ func newAppHandler(c *AppContext) http.Handler {
 		middleware.ErrorHandlerMiddleware,
 		middleware.PanicRecoveryMiddleware,
 		reqcontext.CreateRequestIDHandler(false),
-		chainutils.Mount("/api", hconv.FromHttp(gotalk.WebSocketHandler())),
+		chainutils.OnPrefix("/api", wss),
+		chainutils.OnPrefix("/assets/gotalk.js", gosock.CreateAssetHandler("/assets/gotalk.js", "/api", false)),
 	)
 
 	b.Handler(fileserver.NewEx(http.Dir("./www"), NotFoundHandler))
@@ -57,6 +62,7 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	w.WriteHeader(http.StatusNotFound)
 	_, err = io.Copy(w, f)
 	if err != nil {
 		return err
@@ -65,14 +71,12 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
 }
 
 func NewApp(context *AppContext) http.Handler {
-	m := http.NewServeMux()
-	m.Handle("/", newAppHandler(context))
-	return http.Handler(m)
+	return newAppHandler(context)
 }
 
 func Run(logger *log.Logger, addr string) {
 	c := createAppContext(logger, addr)
-	a := NewApp(c)
+	a := newAppHandler(c)
 
 	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
 	server := &http.Server{
@@ -87,9 +91,21 @@ func Run(logger *log.Logger, addr string) {
 		server.Shutdown(context.Background())
 	}, appx.ShutdownSignals...)
 
-	err := server.ListenAndServe()
+	tcert, _ := cert.CreateSelfSignedRandomX509("PVL Labs", nil)
+
+	tlsConf := tls.Config{
+		Certificates: []tls.Certificate{tcert},
+	}
+
+	server.TLSConfig = &tlsConf
+
+	lsr, err := tls.Listen("tcp", c.ServerAddress, &tlsConf)
+	if err != nil {
+		log.Errorf("server listen: %v", err)
+	}
+	err = server.Serve(lsr)
 	if err != http.ErrServerClosed {
-		log.Errorf("server close: %s", err.Error())
+		log.Errorf("server close: %v", err)
 	}
 	log.Info("exit")
 }
