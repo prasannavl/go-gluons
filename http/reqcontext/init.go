@@ -12,7 +12,11 @@ func CreateInitMiddleware(l *log.Logger) mchain.Middleware {
 	m := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
 			ww := writer.NewResponseWriter(w, r.ProtoMajor)
-			defer ww.Flush()
+			defer func() {
+				if _, err := ww.Write(nil); err != http.ErrHijacked {
+					ww.Flush()
+				}
+			}()
 			err := next.ServeHTTP(ww, WithRequestContext(r, &RequestContext{
 				Logger: *l,
 			}))
