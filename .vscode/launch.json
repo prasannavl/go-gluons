@@ -7,7 +7,7 @@
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceRoot}/http/app-http",
-      "args": ["-vvv"]
+      "args": ["-vvvh"]
     }
   ]
 }
