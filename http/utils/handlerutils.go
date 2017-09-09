@@ -33,6 +33,8 @@ func OnStrippedPrefixFunc(prefix string, h mchain.HandlerFunc, w http.ResponseWr
 func OnStrippedPrefixAndRedirectToSlash(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
 	if strings.HasPrefix(r.URL.Path, prefix) {
 		if r.URL.Path == prefix {
+			// note: Host from the url, which often is empty, unless proxied.
+			// This is not the Host header.
 			path := r.URL.Host + middleware.ConstructPathFromStripped(r) + "/"
 			if r.URL.RawQuery != "" {
 				path += "?" + r.URL.RawQuery
