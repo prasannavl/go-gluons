@@ -59,19 +59,23 @@ func (b *BasicWriter) Header() http.Header {
 
 func (b *BasicWriter) WriteHeader(code int) {
 	b.code = code
-	b.wroteHeader = true
+	if code != 0 {
+		b.wroteHeader = true
+	} else {
+		b.wroteHeader = false
+	}
 }
 
 func (b *BasicWriter) WriteHeaderImmediate(code int) {
 	b.WriteHeader(code)
-	if code != 0 {
+	if b.wroteHeader {
 		b.inner.WriteHeader(code)
 		b.headerFlushed = true
 	}
 }
 
 func (b *BasicWriter) FlushHeadersIfRequired() {
-	if !b.headerFlushed && b.wroteHeader {
+	if !b.headerFlushed {
 		b.WriteHeaderImmediate(b.code)
 	}
 }
@@ -132,10 +136,10 @@ func (f *HttpOneWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func (f *HttpOneWriter) ReadFrom(r io.Reader) (int64, error) {
+	f.BasicWriter.FlushHeadersIfRequired()
 	if f.BasicWriter.tee != nil {
 		return io.Copy(&f.BasicWriter, r)
 	}
-	f.BasicWriter.FlushHeadersIfRequired()
 	rf := f.BasicWriter.inner.(io.ReaderFrom)
 	n, err := rf.ReadFrom(r)
 	f.BasicWriter.bytes += int(n)
