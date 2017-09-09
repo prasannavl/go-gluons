@@ -3,7 +3,7 @@ package log
 import (
 	"bytes"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prasannavl/go-gluons/ansicode"
@@ -25,7 +25,7 @@ func DefaultTextFormatterForHuman(r *Record) string {
 		timeFormat = "03:04:05"
 	}
 	buf.WriteString(t.Format(timeFormat))
-	buf.WriteString("  " + GetLogLevelString(r.Meta.Level) + "  ")
+	buf.WriteString("  " + PaddedString(GetLogLevelString(r.Meta.Level), 5) + "  ")
 	args := r.Args
 	if r.Format == "" {
 		fmt.Fprint(&buf, args...)
@@ -51,7 +51,7 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 		timeFormat = "03:04:05"
 	}
 	buf.WriteString(ansicode.BlackBright + t.Format(timeFormat) + ansicode.Reset)
-	buf.WriteString("  " + GetLogLevelColoredString(r.Meta.Level) + "  ")
+	buf.WriteString("  " + logLevelColoredString(r.Meta.Level) + "  ")
 	args := r.Args
 	for i, a := range args {
 		if colorable, ok := a.(ColorStringer); ok {
@@ -107,7 +107,7 @@ func HashColoredText(name string) string {
 func DefaultTextFormatter(r *Record) string {
 	var buf bytes.Buffer
 	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
-	buf.WriteString("," + strconv.Itoa(int(r.Meta.Level)) + ",")
+	buf.WriteString("," + GetLogLevelString(r.Meta.Level) + ",")
 	args := r.Args
 	if r.Format == "" {
 		fmt.Fprintf(&buf, "%q", fmt.Sprint(args...))
@@ -124,12 +124,22 @@ func DefaultTextFormatter(r *Record) string {
 	return buf.String()
 }
 
+func PaddedString(s string, width int) string {
+	diff := width - len(s)
+	if diff == 1 {
+		return s + " "
+	} else if diff > 1 {
+		return s + strings.Repeat(" ", diff)
+	}
+	return s
+}
+
 func GetLogLevelString(lvl Level) string {
 	switch lvl {
 	case InfoLevel:
-		return "info "
+		return "info"
 	case WarnLevel:
-		return "warn "
+		return "warn"
 	case ErrorLevel:
 		return "error"
 	case DebugLevel:
@@ -137,11 +147,11 @@ func GetLogLevelString(lvl Level) string {
 	case TraceLevel:
 		return "trace"
 	}
-	return " msg  "
+	return "msg"
 }
 
-func GetLogLevelColoredString(lvl Level) string {
-	return GetLogLevelColoredMsg(lvl, GetLogLevelString(lvl))
+func logLevelColoredString(lvl Level) string {
+	return GetLogLevelColoredMsg(lvl, PaddedString(GetLogLevelString(lvl), 5))
 }
 
 func GetLogLevelColoredMsg(lvl Level, msg string) string {
