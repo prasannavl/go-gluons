@@ -9,7 +9,8 @@ import (
 	"fmt"
 
 	"net/http"
-	_ "net/http/pprof"
+
+	"github.com/prasannavl/go-gluons/http/pprof"
 
 	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/http/app-http/app"
@@ -77,21 +78,7 @@ func printPackageHeader(versionOnly bool) {
 	}
 }
 
-func setupProfiler(addr string) {
-	if addr == "" {
-		return
-	}
-	go func() {
-		l, err := net.Listen("tcp", addr)
-		if err != nil {
-			log.Errorf("pprof-listener: %v", err)
-		}
-		log.Infof("pprof endpoint: %s", l.Addr())
-		http.Serve(l, nil)
-	}()
-}
-
-func setupRedirector(redirectAddr string, addr string) {
+func tryRunRedirector(redirectAddr string, addr string) {
 	if redirectAddr == "" {
 		return
 	}
@@ -143,7 +130,9 @@ func main() {
 
 	logInitResult := initLogging(&env)
 	log.Infof("listen-address: %s", env.Addr)
-	setupProfiler(env.PprofAddr)
-	setupRedirector(env.RedirectorAddr, env.Addr)
+	if env.PprofAddr != "" {
+		go pprof.Run(env.PprofAddr, "/pprof")
+	}
+	tryRunRedirector(env.RedirectorAddr, env.Addr)
 	app.Run(logInitResult.Logger, env.Addr, env.Hosts, env.Insecure, env.UseSelfSigned)
 }
