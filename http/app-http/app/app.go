@@ -43,7 +43,7 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 	return &c
 }
 
-func newAppHandler(c *AppContext) mchain.Handler {
+func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 	apiHandlers := apiHandlers(c)
 	wss := gosock.NewWebSocketServer(apiHandlers)
 
@@ -55,33 +55,32 @@ func newAppHandler(c *AppContext) mchain.Handler {
 		middleware.ErrorHandlerMiddleware,
 		middleware.PanicRecoveryMiddleware,
 		middleware.CreateRequestIDHandler(false),
-		chainutils.OnPrefixFunc("/test", func(w http.ResponseWriter, r *http.Request) error {
-			w.WriteHeader(201)
-			return nil
-		}),
 		chainutils.OnPrefix("/api", wss),
 		chainutils.OnPrefix("/assets/gotalk.js", gosock.CreateAssetHandler("/assets/gotalk.js", "/api", false)),
 	)
 
-	b.Handler(fileserver.NewEx(http.Dir("./www"), NotFoundHandler))
+	b.Handler(fileserver.NewEx(http.Dir(webRoot), CreateNotFoundHandler(webRoot).ServeHTTP))
 	return b.Build()
 }
 
-func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
-	f, err := os.Open("./www/error/404.html")
-	if err != nil {
-		return err
+func CreateNotFoundHandler(webRoot string) mchain.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) error {
+		f, err := os.Open(webRoot + "/error/404.html")
+		if err != nil {
+			return err
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, err = io.Copy(w, f)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	w.WriteHeader(http.StatusNotFound)
-	_, err = io.Copy(w, f)
-	if err != nil {
-		return err
-	}
-	return nil
+	return mchain.HandlerFunc(f)
 }
 
-func NewApp(context *AppContext, hosts []string) http.Handler {
-	appHandler := hconv.ToHttp(newAppHandler(context), nil)
+func NewApp(context *AppContext, webRoot string, hosts []string) http.Handler {
+	appHandler := hconv.ToHttp(newAppHandler(context, webRoot), nil)
 	if len(hosts) == 0 {
 		return appHandler
 	}
@@ -91,13 +90,13 @@ func NewApp(context *AppContext, hosts []string) http.Handler {
 		r.HandlePattern(h, appHandler)
 	}
 	return r.Build(hconv.FuncToHttp(
-		NotFoundHandler,
+		CreateNotFoundHandler(webRoot).ServeHTTP,
 		utils.InternalServerErrorAndLog))
 }
 
-func Run(logger *log.Logger, addr string, hosts []string, insecure bool, useSelfSigned bool) {
+func Run(logger *log.Logger, addr string, webRoot string, hosts []string, insecure bool, useSelfSigned bool) {
 	c := createAppContext(logger, addr)
-	a := NewApp(c, hosts)
+	a := NewApp(c, webRoot, hosts)
 
 	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
 	server := &http.Server{

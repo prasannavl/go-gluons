@@ -1,6 +1,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	flag "github.com/spf13/pflag"
 
 	"fmt"
@@ -26,6 +28,7 @@ type EnvFlags struct {
 	RedirectorAddr string
 	UseSelfSigned  bool
 	Hosts          []string
+	WebRoot        string
 }
 
 func initFlags(env *EnvFlags) {
@@ -40,6 +43,7 @@ func initFlags(env *EnvFlags) {
 	flag.BoolVar(&env.UseSelfSigned, "self-signed", false, "use randomly generated self signed certificate for tls")
 	flag.StringVar(&env.RedirectorAddr, "redirector", "", "a redirector address as 'host:port' to enable")
 	flag.StringArrayVar(&env.Hosts, "hosts", nil, "'host:port' items to enable hosts filter")
+	flag.StringVar(&env.WebRoot, "root", "", "web root path")
 
 	flag.Usage = func() {
 		printPackageHeader(false)
@@ -102,5 +106,5 @@ func main() {
 		s2 := redirector.Create(env.RedirectorAddr, env.Addr)
 		go s2.Start()
 	}
-	app.Run(logInitResult.Logger, env.Addr, env.Hosts, env.Insecure, env.UseSelfSigned)
+	app.Run(logInitResult.Logger, env.Addr, filepath.Clean(env.WebRoot), env.Hosts, env.Insecure, env.UseSelfSigned)
 }
