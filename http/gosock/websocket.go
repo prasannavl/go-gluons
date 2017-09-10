@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/prasannavl/go-gluons/log"
 	"github.com/rsms/gotalk"
 )
 
@@ -79,8 +80,12 @@ func DefaultWebSocketServerOptions() WebSocketServerOptions {
 		Upgrader: websocket.Upgrader{
 			EnableCompression: true,
 			HandshakeTimeout:  8 * time.Second,
-			ReadBufferSize:    1024,
-			WriteBufferSize:   1024,
+			ReadBufferSize:    256,
+			WriteBufferSize:   256,
+			Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
+				log.Errorf("websocket: status: %v, %v", status, reason)
+				w.WriteHeader(status)
+			},
 		},
 	}
 }
