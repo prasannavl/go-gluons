@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strconv"
 
 	flag "github.com/spf13/pflag"
 
@@ -12,18 +13,35 @@ import (
 
 	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/http/app-http/app"
+	"github.com/prasannavl/go-gluons/http/utils"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/go-gluons/logconfig"
 )
 
-func main() {
-	var addr string
-	var logFile string
-	var logDisabled bool
-	var verbosity int
-	var displayVersion bool
+type EnvFlags struct {
+	Addr           string
+	LogFile        string
+	LogDisabled    bool
+	Verbosity      int
+	DisplayVersion bool
+	PprofAddr      string
+	LogHumanize    bool
+	Insecure       bool
+	RedirectorAddr string
+	UseSelfSigned  bool
+}
 
-	appx.InitTerm()
+func initFlags(env *EnvFlags) {
+	flag.BoolVar(&env.DisplayVersion, "version", false, "display the version and exit")
+	flag.CountVarP(&env.Verbosity, "verbose", "v", "verbosity level")
+	flag.StringVarP(&env.Addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
+	flag.StringVar(&env.PprofAddr, "pprof-address", "localhost:9090", "the 'host:port' for pprof")
+	flag.StringVar(&env.LogFile, "log", "", "the log file destination")
+	flag.BoolVar(&env.LogDisabled, "no-log", false, "disable the logger")
+	flag.BoolVarP(&env.LogHumanize, "log-humanize", "h", false, "humanize log messages")
+	flag.BoolVar(&env.Insecure, "insecure", false, "disable tls")
+	flag.BoolVar(&env.UseSelfSigned, "self-signed", false, "use randomly generated self signed certificate for tls")
+	flag.StringVar(&env.RedirectorAddr, "redirector", "", "a redirector address as 'host:port' to enable")
 
 	flag.Usage = func() {
 		printPackageHeader(false)
@@ -31,38 +49,22 @@ func main() {
 		flag.PrintDefaults()
 		fmt.Println()
 	}
+}
 
-	flag.BoolVar(&displayVersion, "version", false, "display the version and exit")
-	flag.CountVarP(&verbosity, "verbose", "v", "verbosity level")
-	flag.StringVarP(&addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
-	flag.StringVar(&logFile, "log", "", "the log file destination")
-	flag.BoolVar(&logDisabled, "no-log", false, "disable the logger")
-
-	flag.Parse()
-
-	defer func() {
-		if err := recover(); err != nil {
-			log.Errorv(err)
-		}
-	}()
-
-	if displayVersion {
-		printPackageHeader(true)
-		return
-	}
-
+func initLogging(env *EnvFlags) logconfig.LogInitResult {
 	logInitResult := logconfig.LogInitResult{}
-	if !logDisabled {
+	if !env.LogDisabled {
 		logOpts := logconfig.DefaultOptions()
-		if logFile != "" {
-			logOpts.LogFile = logFile
+		if !env.LogHumanize {
+			logOpts.Humanize = logconfig.Humanize.False
 		}
-		logOpts.VerbosityLevel = verbosity
+		if env.LogFile != "" {
+			logOpts.LogFile = env.LogFile
+		}
+		logOpts.VerbosityLevel = env.Verbosity
 		logconfig.Init(&logOpts, &logInitResult)
 	}
-	log.Infof("listen-address: %q", addr)
-	enableProfiler()
-	app.Run(logInitResult.Logger, addr)
+	return logInitResult
 }
 
 func printPackageHeader(versionOnly bool) {
@@ -73,13 +75,73 @@ func printPackageHeader(versionOnly bool) {
 	}
 }
 
-func enableProfiler() {
+func setupProfiler(addr string) {
+	if addr == "" {
+		return
+	}
 	go func() {
-		l, err := net.Listen("tcp", "localhost:9090")
+		l, err := net.Listen("tcp", addr)
 		if err != nil {
 			log.Errorf("pprof-listener: %v", err)
 		}
 		log.Infof("pprof endpoint: %s", l.Addr())
 		http.Serve(l, nil)
 	}()
+}
+
+func setupRedirector(redirectAddr string, addr string) {
+	if redirectAddr == "" {
+		return
+	}
+	hostAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		l, err := net.Listen("tcp", redirectAddr)
+		if err != nil {
+			log.Errorf("redirector-listener: %v", err)
+		}
+		log.Infof("redirector endpoint: %s", l.Addr())
+		port := strconv.Itoa(hostAddr.Port)
+		shouldIncludePort := true
+		if hostAddr.Port == 443 {
+			shouldIncludePort = false
+		}
+		f := func(w http.ResponseWriter, r *http.Request) {
+			finalAddr := "https://" + r.Host
+			if shouldIncludePort {
+				finalAddr += ":" + port
+			}
+			finalAddr += r.RequestURI
+			utils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
+		}
+		http.Serve(l, http.HandlerFunc(f))
+	}()
+}
+
+func main() {
+	appx.InitTerm()
+
+	env := EnvFlags{}
+	initFlags(&env)
+
+	flag.Parse()
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorv(err)
+		}
+	}()
+
+	if env.DisplayVersion {
+		printPackageHeader(true)
+		return
+	}
+
+	logInitResult := initLogging(&env)
+	log.Infof("listen-address: %s", env.Addr)
+	setupProfiler(env.PprofAddr)
+	setupRedirector(env.RedirectorAddr, env.Addr)
+	app.Run(logInitResult.Logger, env.Addr, env.Insecure, env.UseSelfSigned)
 }
