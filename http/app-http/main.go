@@ -1,21 +1,15 @@
 package main
 
 import (
-	"net"
-	"strconv"
-	"time"
-
 	flag "github.com/spf13/pflag"
 
 	"fmt"
 
-	"net/http"
-
 	"github.com/prasannavl/go-gluons/http/pprof"
+	"github.com/prasannavl/go-gluons/http/redirector"
 
 	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/http/app-http/app"
-	"github.com/prasannavl/go-gluons/http/utils"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/go-gluons/logconfig"
 )
@@ -79,46 +73,6 @@ func printPackageHeader(versionOnly bool) {
 	}
 }
 
-func tryRunRedirector(redirectAddr string, addr string) {
-	if redirectAddr == "" {
-		return
-	}
-	hostAddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		l, err := net.Listen("tcp", redirectAddr)
-		if err != nil {
-			log.Errorf("redirector-listener: %v", err)
-		}
-		log.Infof("redirector endpoint: %s", l.Addr())
-		port := strconv.Itoa(hostAddr.Port)
-		shouldIncludePort := true
-		if hostAddr.Port == 443 {
-			shouldIncludePort = false
-		}
-		f := func(w http.ResponseWriter, r *http.Request) {
-			finalAddr := "https://" + r.Host
-			if shouldIncludePort {
-				finalAddr += ":" + port
-			}
-			finalAddr += r.RequestURI
-			w.Header().Set("connection", "close")
-			utils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
-		}
-		server := &http.Server{
-			Handler:        http.HandlerFunc(f),
-			IdleTimeout:    1 * time.Second,
-			ReadTimeout:    5 * time.Second,
-			WriteTimeout:   2 * time.Second,
-			ErrorLog:       nil,
-			MaxHeaderBytes: 1 << 12, // 4kb
-		}
-		server.Serve(l)
-	}()
-}
-
 func main() {
 	appx.InitTerm()
 
@@ -141,8 +95,12 @@ func main() {
 	logInitResult := initLogging(&env)
 	log.Infof("listen-address: %s", env.Addr)
 	if env.PprofAddr != "" {
-		go pprof.Run(env.PprofAddr, "/pprof")
+		s1 := pprof.Create(env.PprofAddr, "/pprof")
+		go s1.Start()
 	}
-	tryRunRedirector(env.RedirectorAddr, env.Addr)
+	if env.RedirectorAddr != "" {
+		s2 := redirector.Create(env.RedirectorAddr, env.Addr)
+		go s2.Start()
+	}
 	app.Run(logInitResult.Logger, env.Addr, env.Hosts, env.Insecure, env.UseSelfSigned)
 }
