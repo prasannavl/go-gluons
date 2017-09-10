@@ -1,4 +1,4 @@
-package reqcontext
+package middleware
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
 			err := next.ServeHTTP(w, r)
 			ctx := FromRequest(r)
 			if err != nil {
+				LogError(&ctx.Logger, err)
 				LogErrorStack(&ctx.Logger, ctx.ErrorStacks...)
 			}
 			logger := &ctx.Logger
@@ -58,7 +59,7 @@ func LogError(logger *log.Logger, e interface{}) {
 				break
 			}
 			if errutils.HasMessage(e) {
-				logger.Errorf("cause: %s => %#v ", e.Error(), e)	
+				logger.Errorf("cause: %s => %#v ", e.Error(), e)
 			}
 		}
 	} else {

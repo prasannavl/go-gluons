@@ -1,4 +1,4 @@
-package reqcontext
+package middleware
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ func CreateInitMiddleware(l *log.Logger) mchain.Middleware {
 		f := func(w http.ResponseWriter, r *http.Request) error {
 			ww := writer.NewResponseWriter(w, r.ProtoMajor)
 			defer func() {
-				if _, err := ww.Write(nil); err != http.ErrHijacked {
+				if !ww.IsHijacked() {
 					ww.Flush()
 				}
 			}()

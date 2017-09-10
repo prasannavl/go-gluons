@@ -5,6 +5,7 @@ import (
 
 	"github.com/prasannavl/goerror/httperror"
 
+	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/mchain"
 )
 
@@ -21,8 +22,10 @@ func ErrorHandlerMiddleware(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) (err error) {
 		err = next.ServeHTTP(w, r)
 		if err != nil {
-			if _, err2 := w.Write(nil); err2 == http.ErrHijacked {
-				return err
+			if ww, ok := w.(writer.ResponseWriter); ok {
+				if ww.IsHijacked() {
+					return err
+				}
 			}
 			switch e := err.(type) {
 			case httperror.HttpError:
