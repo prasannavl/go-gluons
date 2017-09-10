@@ -104,10 +104,11 @@ func Run(logger *log.Logger, addr string, hosts []string, insecure bool, useSelf
 		Addr:           c.ServerAddress,
 		Handler:        a,
 		IdleTimeout:    20 * time.Second,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		ReadTimeout:    20 * time.Second,
+		WriteTimeout:   20 * time.Second,
 		ErrorLog:       stdErrLog,
-		MaxHeaderBytes: 1 << 20}
+		MaxHeaderBytes: 1 << 20, // 1mb
+	}
 
 	appx.CreateShutdownHandler(func() {
 		server.Shutdown(context.Background())

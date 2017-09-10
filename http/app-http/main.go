@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"strconv"
+	"time"
 
 	flag "github.com/spf13/pflag"
 
@@ -103,9 +104,18 @@ func tryRunRedirector(redirectAddr string, addr string) {
 				finalAddr += ":" + port
 			}
 			finalAddr += r.RequestURI
+			w.Header().Set("connection", "close")
 			utils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
 		}
-		http.Serve(l, http.HandlerFunc(f))
+		server := &http.Server{
+			Handler:        http.HandlerFunc(f),
+			IdleTimeout:    1 * time.Second,
+			ReadTimeout:    5 * time.Second,
+			WriteTimeout:   2 * time.Second,
+			ErrorLog:       nil,
+			MaxHeaderBytes: 1 << 12, // 4kb
+		}
+		server.Serve(l)
 	}()
 }
 

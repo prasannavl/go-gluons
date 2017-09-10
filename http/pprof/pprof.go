@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"time"
 
 	"github.com/prasannavl/go-gluons/log"
 )
@@ -16,7 +17,15 @@ func Run(addr string, path string) {
 	log.Infof("pprof endpoint: %s", l.Addr())
 	mux := http.NewServeMux()
 	SetupHandlers(mux, path)
-	http.Serve(l, mux)
+	server := &http.Server{
+		Handler:        mux,
+		IdleTimeout:    20 * time.Second,
+		ReadTimeout:    20 * time.Second,
+		WriteTimeout:   60 * time.Second,
+		ErrorLog:       nil,
+		MaxHeaderBytes: 1 << 12, // 4kb
+	}
+	server.Serve(l)
 }
 
 func SetupHandlers(mux *http.ServeMux, pathPrefix string) {
