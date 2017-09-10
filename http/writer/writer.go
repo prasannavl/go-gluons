@@ -14,11 +14,7 @@ func NewResponseWriter(w http.ResponseWriter, protoMajor int) ResponseWriter {
 	if protoMajor == 2 {
 		return &HttpTwoWriter{bw}
 	}
-	return &HttpOneWriter{bw}
-}
-
-func SetProxyStatusCode(w ResponseWriter, code int) {
-	w.(*BasicWriter).code = code
+	return &HttpOneWriter{bw, false}
 }
 
 // ResponseWriter is a proxy around an http.ResponseWriter that allows you to hook
@@ -40,17 +36,18 @@ type ResponseWriter interface {
 	// Unwrap returns the original proxied target.
 	Unwrap() http.ResponseWriter
 	Flush()
+	IsHijacked() bool
 }
 
 // basicWriter wraps a http.ResponseWriter that implements the minimal
 // http.ResponseWriter interface.
 type BasicWriter struct {
-	inner         http.ResponseWriter
-	wroteHeader   bool
-	headerFlushed bool
-	code          int
-	bytes         int
-	tee           io.Writer
+	inner           http.ResponseWriter
+	isHeaderSet     bool
+	isHeaderFlushed bool
+	code            int
+	bytes           int
+	tee             io.Writer
 }
 
 func (b *BasicWriter) Header() http.Header {
@@ -60,22 +57,22 @@ func (b *BasicWriter) Header() http.Header {
 func (b *BasicWriter) WriteHeader(code int) {
 	b.code = code
 	if code != 0 {
-		b.wroteHeader = true
+		b.isHeaderSet = true
 	} else {
-		b.wroteHeader = false
+		b.isHeaderSet = false
 	}
 }
 
 func (b *BasicWriter) WriteHeaderImmediate(code int) {
 	b.WriteHeader(code)
-	if b.wroteHeader {
+	if b.isHeaderSet {
 		b.inner.WriteHeader(code)
-		b.headerFlushed = true
+		b.isHeaderFlushed = true
 	}
 }
 
 func (b *BasicWriter) FlushHeadersIfRequired() {
-	if !b.headerFlushed {
+	if !b.isHeaderFlushed {
 		b.WriteHeaderImmediate(b.code)
 	}
 }
@@ -124,15 +121,29 @@ func (b *BasicWriter) Flush() {
 	fl.Flush()
 }
 
+func (b *BasicWriter) IsHijacked() bool {
+	return false
+}
+
 // HttpOneWriter is a HTTP writer that additionally satisfies http.Hijacker,
 // and io.ReaderFrom.
 type HttpOneWriter struct {
 	BasicWriter
+	isHijacked bool
+}
+
+func (f *HttpOneWriter) IsHijacked() bool {
+	return f.isHijacked
 }
 
 func (f *HttpOneWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hj := f.BasicWriter.inner.(http.Hijacker)
-	return hj.Hijack()
+	conn, rw, err := hj.Hijack()
+	if err == nil {
+		f.isHijacked = true
+		return conn, rw, err
+	}
+	return conn, rw, err
 }
 
 func (f *HttpOneWriter) ReadFrom(r io.Reader) (int64, error) {
