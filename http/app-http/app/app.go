@@ -1,47 +1,27 @@
 package app
 
 import (
-	"crypto/tls"
 	"html/template"
 	"io"
-	"net"
 	"net/http"
 	"os"
-	"time"
+
+	"github.com/prasannavl/go-gluons/http/httpservice"
 
 	"github.com/prasannavl/mchain/hconv"
 
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/cert"
 	"github.com/prasannavl/go-gluons/http/chainutils"
 	"github.com/prasannavl/go-gluons/http/gosock"
 	"github.com/prasannavl/go-gluons/http/hostrouter"
 	"github.com/prasannavl/go-gluons/http/utils"
-	"golang.org/x/crypto/acme/autocert"
 
-	"context"
-
-	stdlog "log"
-
-	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/http/fileserver"
 	"github.com/prasannavl/go-gluons/http/middleware"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
 )
-
-func createAppContext(logger *log.Logger, addr string) *AppContext {
-	services := Services{
-		Logger:        logger,
-		TemplateCache: make(map[string]*template.Template),
-	}
-	c := AppContext{
-		Services:      services,
-		ServerAddress: addr,
-	}
-	return &c
-}
 
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 	apiHandlers := apiHandlers(c)
@@ -79,7 +59,20 @@ func CreateNotFoundHandler(webRoot string) mchain.Handler {
 	return mchain.HandlerFunc(f)
 }
 
-func NewApp(context *AppContext, webRoot string, hosts []string) http.Handler {
+func createAppContext(logger *log.Logger, addr string) *AppContext {
+	services := Services{
+		Logger:        logger,
+		TemplateCache: make(map[string]*template.Template),
+	}
+	c := AppContext{
+		Services:      services,
+		ServerAddress: addr,
+	}
+	return &c
+}
+
+func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) http.Handler {
+	context := createAppContext(logger, addr)
 	appHandler := hconv.ToHttp(newAppHandler(context, webRoot), nil)
 	if len(hosts) == 0 {
 		return appHandler
@@ -94,60 +87,9 @@ func NewApp(context *AppContext, webRoot string, hosts []string) http.Handler {
 		utils.InternalServerErrorAndLog))
 }
 
-func Run(logger *log.Logger, addr string, webRoot string, hosts []string, insecure bool, useSelfSigned bool) {
-	c := createAppContext(logger, addr)
-	a := NewApp(c, webRoot, hosts)
-
-	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
-	server := &http.Server{
-		Addr:           c.ServerAddress,
-		Handler:        a,
-		IdleTimeout:    20 * time.Second,
-		ReadTimeout:    20 * time.Second,
-		WriteTimeout:   20 * time.Second,
-		ErrorLog:       stdErrLog,
-		MaxHeaderBytes: 1 << 20, // 1mb
-	}
-
-	appx.CreateShutdownHandler(func() {
-		server.Shutdown(context.Background())
-	}, appx.ShutdownSignals...)
-
-	var listener net.Listener
-
-	var err error
-	if insecure {
-		listener, err = net.Listen("tcp", c.ServerAddress)
-	} else {
-		tlsConf := tls.Config{
-			NextProtos: []string{"h2", "http/1.1"},
-		}
-		listener, err = createTLSListener(addr, &tlsConf, useSelfSigned, hosts)
-	}
-	if err != nil {
-		log.Errorf("server-listener: %v", err)
-		return
-	}
-	err = server.Serve(listener)
-	if err != http.ErrServerClosed {
-		log.Errorf("server-close: %v", err)
-	}
-	log.Info("exit")
-}
-
-func createTLSListener(addr string, tlsConf *tls.Config, useSelfSigned bool, tlsHosts []string) (net.Listener, error) {
-	if useSelfSigned || len(tlsHosts) == 0 {
-		tcert, err := cert.CreateSelfSignedRandomX509("Local", nil)
-		if err != nil {
-			return nil, err
-		}
-		tlsConf.Certificates = []tls.Certificate{tcert}
-	} else {
-		certMgr := &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(tlsHosts...),
-		}
-		tlsConf.GetCertificate = certMgr.GetCertificate
-	}
-	return tls.Listen("tcp", addr, tlsConf)
+func CreateService(logger *log.Logger, addr string, webRoot string, hosts []string,
+	insecure bool, useSelfSigned bool) (httpservice.Service, error) {
+	app := NewApp(logger, addr, webRoot, hosts)
+	return httpservice.NewHandlerService(logger, addr, app,
+		webRoot, hosts, insecure, useSelfSigned)
 }

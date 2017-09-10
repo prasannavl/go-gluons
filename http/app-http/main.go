@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"path/filepath"
 
 	flag "github.com/spf13/pflag"
@@ -100,11 +101,30 @@ func main() {
 	log.Infof("listen-address: %s", env.Addr)
 	if env.PprofAddr != "" {
 		s1 := pprof.Create(env.PprofAddr, "/pprof")
-		go s1.Start()
+		go s1.Run()
 	}
 	if env.RedirectorAddr != "" {
 		s2 := redirector.Create(env.RedirectorAddr, env.Addr)
-		go s2.Start()
+		go s2.Run()
 	}
-	app.Run(logInitResult.Logger, env.Addr, filepath.Clean(env.WebRoot), env.Hosts, env.Insecure, env.UseSelfSigned)
+
+	service, err := app.CreateService(
+		logInitResult.Logger, env.Addr,
+		filepath.Clean(env.WebRoot),
+		env.Hosts, env.Insecure, env.UseSelfSigned)
+
+	if err != nil {
+		log.Errorf("failed to create service: %v", err)
+	}
+
+	appx.CreateShutdownHandler(func() {
+		service.Stop(0)
+	}, appx.ShutdownSignals...)
+
+	err = service.Run()
+	if err != http.ErrServerClosed {
+		log.Errorf("service: %v", err)
+	}
+
+	log.Info("exit")
 }
