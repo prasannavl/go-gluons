@@ -2,6 +2,7 @@ package hostrouter
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gobwas/glob"
 )
@@ -27,10 +28,26 @@ func New() *HostRouter {
 	return &HostRouter{Threshold: 7}
 }
 
+func hostName(r *http.Request) string {
+	hostname := stripPort(r.Host)
+	return strings.ToLower(hostname)
+}
+
+func stripPort(hostport string) string {
+	colon := strings.IndexByte(hostport, ':')
+	if colon == -1 {
+		return hostport
+	}
+	if i := strings.IndexByte(hostport, ']'); i != -1 {
+		return strings.TrimPrefix(hostport[:i], "[")
+	}
+	return hostport[:colon]
+}
+
 func (h *HostRouter) Build(notFoundHandler http.Handler) http.Handler {
 	if items, ok := h.Items.(map[string]http.Handler); ok {
 		hh := func(w http.ResponseWriter, r *http.Request) {
-			hostname := r.Host
+			hostname := hostName(r)
 			if handler, ok := items[hostname]; ok {
 				handler.ServeHTTP(w, r)
 				return
@@ -47,20 +64,20 @@ func (h *HostRouter) Build(notFoundHandler http.Handler) http.Handler {
 	}
 	items := h.Items.([]RouterItem)
 	hx := func(w http.ResponseWriter, r *http.Request) {
+		hostname := hostName(r)
 		for _, x := range items {
-			hostname := r.Host
 			if x.host == hostname {
 				x.handler.ServeHTTP(w, r)
 				return
 			}
-			for _, x := range h.PatternItems {
-				if x.matcher.Match(hostname) {
-					x.handler.ServeHTTP(w, r)
-					return
-				}
-			}
-			notFoundHandler.ServeHTTP(w, r)
 		}
+		for _, x := range h.PatternItems {
+			if x.matcher.Match(hostname) {
+				x.handler.ServeHTTP(w, r)
+				return
+			}
+		}
+		notFoundHandler.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(hx)
 }
