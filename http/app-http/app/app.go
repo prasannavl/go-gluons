@@ -4,22 +4,29 @@ import (
 	"crypto/tls"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/prasannavl/mchain/hconv"
+
+	"github.com/prasannavl/mchain"
+
+	"github.com/prasannavl/go-gluons/cert"
 	"github.com/prasannavl/go-gluons/http/chainutils"
 	"github.com/prasannavl/go-gluons/http/gosock"
+	"github.com/prasannavl/go-gluons/http/hostrouter"
+	"github.com/prasannavl/go-gluons/http/utils"
+	"golang.org/x/crypto/acme/autocert"
 
 	"context"
 
 	stdlog "log"
 
 	"github.com/prasannavl/go-gluons/appx"
-	"github.com/prasannavl/go-gluons/cert"
 	"github.com/prasannavl/go-gluons/http/fileserver"
 	"github.com/prasannavl/go-gluons/http/middleware"
-	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain/builder"
 )
@@ -36,24 +43,28 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 	return &c
 }
 
-func newAppHandler(c *AppContext) http.Handler {
+func newAppHandler(c *AppContext) mchain.Handler {
 	apiHandlers := apiHandlers(c)
 	wss := gosock.NewWebSocketServer(apiHandlers)
 
 	b := builder.Create()
 
 	b.Add(
-		reqcontext.CreateInitMiddleware(c.Logger),
-		reqcontext.CreateLogMiddleware(log.InfoLevel),
+		middleware.CreateInitMiddleware(c.Logger),
+		middleware.CreateLogMiddleware(log.InfoLevel),
 		middleware.ErrorHandlerMiddleware,
 		middleware.PanicRecoveryMiddleware,
-		reqcontext.CreateRequestIDHandler(false),
+		middleware.CreateRequestIDHandler(false),
+		chainutils.OnPrefixFunc("/test", func(w http.ResponseWriter, r *http.Request) error {
+			w.WriteHeader(201)
+			return nil
+		}),
 		chainutils.OnPrefix("/api", wss),
 		chainutils.OnPrefix("/assets/gotalk.js", gosock.CreateAssetHandler("/assets/gotalk.js", "/api", false)),
 	)
 
 	b.Handler(fileserver.NewEx(http.Dir("./www"), NotFoundHandler))
-	return b.BuildHttp(nil)
+	return b.Build()
 }
 
 func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
@@ -69,13 +80,24 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewApp(context *AppContext) http.Handler {
-	return newAppHandler(context)
+func NewApp(context *AppContext, hosts []string) http.Handler {
+	appHandler := hconv.ToHttp(newAppHandler(context), nil)
+	if len(hosts) == 0 {
+		return appHandler
+	}
+	r := hostrouter.New()
+	log.Infof("host filters: %v", hosts)
+	for _, h := range hosts {
+		r.HandlePattern(h, appHandler)
+	}
+	return r.Build(hconv.FuncToHttp(
+		NotFoundHandler,
+		utils.InternalServerErrorAndLog))
 }
 
-func Run(logger *log.Logger, addr string) {
+func Run(logger *log.Logger, addr string, hosts []string, insecure bool, useSelfSigned bool) {
 	c := createAppContext(logger, addr)
-	a := newAppHandler(c)
+	a := NewApp(c, hosts)
 
 	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
 	server := &http.Server{
@@ -91,21 +113,41 @@ func Run(logger *log.Logger, addr string) {
 		server.Shutdown(context.Background())
 	}, appx.ShutdownSignals...)
 
-	tcert, _ := cert.CreateSelfSignedRandomX509("PVL Labs", nil)
+	var listener net.Listener
 
-	tlsConf := tls.Config{
-		Certificates: []tls.Certificate{tcert},
+	var err error
+	if insecure {
+		listener, err = net.Listen("tcp", c.ServerAddress)
+	} else {
+		tlsConf := tls.Config{
+			NextProtos: []string{"h2", "http/1.1"},
+		}
+		listener, err = createTLSListener(addr, &tlsConf, useSelfSigned, hosts)
 	}
-
-	server.TLSConfig = &tlsConf
-
-	lsr, err := tls.Listen("tcp", c.ServerAddress, &tlsConf)
 	if err != nil {
-		log.Errorf("server listen: %v", err)
+		log.Errorf("server-listener: %v", err)
+		return
 	}
-	err = server.Serve(lsr)
+	err = server.Serve(listener)
 	if err != http.ErrServerClosed {
-		log.Errorf("server close: %v", err)
+		log.Errorf("server-close: %v", err)
 	}
 	log.Info("exit")
+}
+
+func createTLSListener(addr string, tlsConf *tls.Config, useSelfSigned bool, tlsHosts []string) (net.Listener, error) {
+	if useSelfSigned || len(tlsHosts) == 0 {
+		tcert, err := cert.CreateSelfSignedRandomX509("Local", nil)
+		if err != nil {
+			return nil, err
+		}
+		tlsConf.Certificates = []tls.Certificate{tcert}
+	} else {
+		certMgr := &autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(tlsHosts...),
+		}
+		tlsConf.GetCertificate = certMgr.GetCertificate
+	}
+	return tls.Listen("tcp", addr, tlsConf)
 }

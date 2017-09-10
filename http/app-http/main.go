@@ -29,6 +29,7 @@ type EnvFlags struct {
 	Insecure       bool
 	RedirectorAddr string
 	UseSelfSigned  bool
+	Hosts          []string
 }
 
 func initFlags(env *EnvFlags) {
@@ -42,6 +43,7 @@ func initFlags(env *EnvFlags) {
 	flag.BoolVar(&env.Insecure, "insecure", false, "disable tls")
 	flag.BoolVar(&env.UseSelfSigned, "self-signed", false, "use randomly generated self signed certificate for tls")
 	flag.StringVar(&env.RedirectorAddr, "redirector", "", "a redirector address as 'host:port' to enable")
+	flag.StringArrayVar(&env.Hosts, "hosts", nil, "'host:port' items to enable hosts filter")
 
 	flag.Usage = func() {
 		printPackageHeader(false)
@@ -143,5 +145,5 @@ func main() {
 	log.Infof("listen-address: %s", env.Addr)
 	setupProfiler(env.PprofAddr)
 	setupRedirector(env.RedirectorAddr, env.Addr)
-	app.Run(logInitResult.Logger, env.Addr, env.Insecure, env.UseSelfSigned)
+	app.Run(logInitResult.Logger, env.Addr, env.Hosts, env.Insecure, env.UseSelfSigned)
 }
