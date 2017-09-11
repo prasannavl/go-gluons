@@ -3,6 +3,7 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,15 +111,15 @@ func DefaultTextFormatter(r *Record) string {
 	buf.WriteString("," + GetLogLevelString(r.Meta.Level) + ",")
 	args := r.Args
 	if r.Format == "" {
-		fmt.Fprintf(&buf, "%q", fmt.Sprint(args...))
+		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
 	} else if len(args) > 0 {
-		fmt.Fprintf(&buf, "%q", fmt.Sprintf(r.Format, args...))
+		buf.WriteString(strconv.Quote(fmt.Sprintf(r.Format, args...)))
 	} else {
-		fmt.Fprintf(&buf, "%q", r.Format)
+		buf.WriteString(strconv.Quote(r.Format))
 	}
 	ctx := r.Fields()
 	for _, x := range ctx {
-		fmt.Fprintf(&buf, ",%q=%q", x.Name, x.Value)
+		buf.WriteString("," + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
 	}
 	buf.WriteString("\r\n")
 	return buf.String()
