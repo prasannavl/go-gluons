@@ -2,9 +2,7 @@ package app
 
 import (
 	"html/template"
-	"io"
 	"net/http"
-	"os"
 
 	"github.com/prasannavl/go-gluons/http/httpservice"
 
@@ -39,24 +37,11 @@ func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 		chainutils.OnPrefix("/assets/gotalk.js", gosock.CreateAssetHandler("/assets/gotalk.js", "/api", false)),
 	)
 
-	b.Handler(fileserver.NewEx(http.Dir(webRoot), CreateNotFoundHandler(webRoot).ServeHTTP))
-	return b.Build()
-}
+	notFoundFilePath := webRoot + "/error/404.html"
 
-func CreateNotFoundHandler(webRoot string) mchain.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) error {
-		f, err := os.Open(webRoot + "/error/404.html")
-		if err != nil {
-			return err
-		}
-		w.WriteHeader(http.StatusNotFound)
-		_, err = io.Copy(w, f)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return mchain.HandlerFunc(f)
+	b.Handler(fileserver.NewEx(http.Dir(webRoot),
+		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound).ServeHTTP))
+	return b.Build()
 }
 
 func createAppContext(logger *log.Logger, addr string) *AppContext {
