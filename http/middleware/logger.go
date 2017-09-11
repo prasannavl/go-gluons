@@ -29,20 +29,23 @@ func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
 			if sizeRaw > 0 {
 				logger.Logf(
 					requestLogLevel,
-					"%s %v %v %v %s",
+					"%s %v %v %v %s %s",
 					r.Method,
 					ColoredHttpStatus(ww.Status()),
 					ColoredDuration(time.Since(startTime)),
 					ColoredTransferSize(sizeRaw),
-					r.URL.String())
+					r.RequestURI,
+					r.RemoteAddr,
+				)
 			} else {
 				logger.Logf(
 					requestLogLevel,
-					"%s %v %v %s",
+					"%s %v %v %s %s",
 					r.Method,
 					ColoredHttpStatus(ww.Status()),
 					ColoredDuration(time.Since(startTime)),
-					r.URL.String())
+					r.RequestURI,
+					r.RemoteAddr)
 			}
 			return nil
 		}
