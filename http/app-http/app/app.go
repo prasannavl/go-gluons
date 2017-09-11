@@ -21,6 +21,9 @@ import (
 	"github.com/prasannavl/mchain/builder"
 )
 
+// TODO: Router
+// TODO: More elaborate request logging with user agent, remote ip
+
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 	apiHandlers := apiHandlers(c)
 	wss := gosock.NewWebSocketServer(apiHandlers)
