@@ -166,3 +166,46 @@ func (h *HostRouter) HandlePattern(globPattern string, handler http.Handler) {
 	h.PatternItems = append(items, RouterGlobItem{
 		pattern: globPattern, matcher: glob.MustCompile(globPattern), handler: handler})
 }
+
+func (h *HostRouter) Clone() *HostRouter {
+	return &HostRouter{
+		Items:        h.cloneItems(),
+		Threshold:    h.Threshold,
+		PatternItems: h.clonePatternItems(),
+	}
+}
+
+func (h *HostRouter) cloneItems() interface{} {
+	if items, ok := h.Items.(map[string]http.Handler); ok {
+		newMap := make(map[string]http.Handler, len(items))
+		if len(items) < 1 {
+			return nil
+		}
+		for k, v := range items {
+			newMap[k] = v
+		}
+		return newMap
+	} else if items, ok := h.Items.([]RouterItem); ok {
+		if len(items) < 1 {
+			return nil
+		}
+		newSlice := make([]RouterItem, len(items))
+		for i, v := range items {
+			newSlice[i] = v
+		}
+		return newSlice
+	}
+	return nil
+}
+
+func (h *HostRouter) clonePatternItems() []RouterGlobItem {
+	var items []RouterGlobItem
+	if len(h.PatternItems) < 1 {
+		return items
+	}
+	items = make([]RouterGlobItem, len(h.PatternItems))
+	for i, v := range h.PatternItems {
+		items[i] = v
+	}
+	return items
+}
