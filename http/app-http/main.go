@@ -104,7 +104,7 @@ func main() {
 	if env.DiagAddr != "" {
 		s1 := diag.CreateWithConfigure(env.DiagAddr,
 			diag.SetupIndexNotFound,
-			diag.LogLevelSwitcher("/log-switch", "level"))
+			diag.LogLevelSwitcher(nil))
 		go s1.Run()
 	}
 	if env.RedirectorAddr != "" {

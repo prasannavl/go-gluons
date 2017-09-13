@@ -6,23 +6,42 @@ import (
 
 	"github.com/prasannavl/mchain/hconv"
 
-	"github.com/prasannavl/goerror/httperror"
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/http/utils"
 	"github.com/prasannavl/go-gluons/log"
 )
 
-func LogLevelSwitcher(path string, paramName string) func(*http.ServeMux) {
+func LogLevelSwitcher(opts *LogSwitcherOpts) func(*http.ServeMux) {
 	return func(mux *http.ServeMux) {
-		mux.HandleFunc(path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(paramName),
-			utils.HttpCodeOrLoggedInternalServerError))
+		mux.HandleFunc(opts.Path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(opts), nil))
 	}
 }
 
-func LogLevelSwitchHandlerFunc(paramName string) mchain.HandlerFunc {
+type LogSwitcherOpts struct {
+	Path       string
+	LevelParam string
+	FlushParam string
+}
+
+func DefaultLogSwitcherOpts() LogSwitcherOpts {
+	return LogSwitcherOpts{
+		Path:       "/log",
+		LevelParam: "set-level",
+		FlushParam: "flush",
+	}
+}
+
+func LogLevelSwitchHandlerFunc(opts *LogSwitcherOpts) mchain.HandlerFunc {
+	if opts == nil {
+		o := DefaultLogSwitcherOpts()
+		opts = &o
+	}
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		lvl := r.URL.Query().Get(paramName)
+		flush := r.URL.Query().Get(opts.FlushParam)
+		if flush != "" {
+			log.Flush()
+		}
+		lvl := r.URL.Query().Get(opts.LevelParam)
 		if lvl != "" {
 			lvl = strings.ToLower(strings.TrimSpace(lvl))
 			level := log.LogLevelFromString(lvl)
@@ -32,7 +51,7 @@ func LogLevelSwitchHandlerFunc(paramName string) mchain.HandlerFunc {
 				return nil
 			}
 		}
-		return httperror.New(http.StatusBadRequest, "invalid log level", true)
+		return nil
 	}
 	return f
 }
