@@ -25,8 +25,13 @@ func (r *HttpService) IsRunning() bool {
 
 func (r *HttpService) Run() error {
 	if !r.isRunning {
+		var err error
 		r.isRunning = true
-		return r.server.Serve(r.l)
+		err = r.server.Serve(r.l)
+		if err != nil {
+			r.isRunning = false
+		}
+		return err
 	}
 	return errors.New("service attempted to start while already running")
 }
@@ -48,6 +53,7 @@ func (r *HttpService) Stop(timeout time.Duration) error {
 		if cancel != nil {
 			cancel()
 		}
+		r.isRunning = false
 		return err
 	}
 	return errors.New("service attempted to stop when not running")
