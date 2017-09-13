@@ -102,7 +102,9 @@ func main() {
 	logInitResult := initLogging(&env)
 	log.Infof("listen-address: %s", env.Addr)
 	if env.DiagAddr != "" {
-		s1 := diag.Create(env.DiagAddr, "/")
+		s1 := diag.CreateWithConfigure(env.DiagAddr,
+			diag.SetupIndexNotFound,
+			diag.LogLevelSwitcher("/log-switch", "level"))
 		go s1.Run()
 	}
 	if env.RedirectorAddr != "" {
