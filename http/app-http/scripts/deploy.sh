@@ -2,9 +2,13 @@
 ## Author: Prasanna V. Loganathar
 
 binary_name="apicore"
-deploy_dir="${HOME}/run/bin/"
-logs_dir="${HOME}/run/logs/"
 
+app_dir="${HOME}/run/${binary_name}"
+bin_dir="${app_dir}/bin"
+assets_dir="${app_dir}/www"
+logs_dir="${app_dir}/logs"
+
+build_assets_dir="./www"
 build_target="./bin/${binary_name}"
 
 main() {
@@ -14,12 +18,13 @@ main() {
         eval "${@:1}"
         exit 0;
     fi;
-    local dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"    
+    # Go to the parent directory of this script's dir
+    local dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
     cd ${dir}
     build
     test_build
     deploy
-    cd ${deploy_dir}
+    cd ${bin_dir}
     start
 }
 
@@ -40,21 +45,23 @@ test_build() {
 
 deploy() {
     echo "> deploy: start"
-    mkdir -p "$deploy_dir"
+    rm -rf "${assets_dir}"
+    mkdir -p "$bin_dir" "$assets_dir"
     graceful_exit_or_kill "$binary_name" 90
-    mv -f "${build_target}" "$deploy_dir"
+    mv -f "${build_target}" "$bin_dir"
+    cp -a $build_assets_dir/* "${assets_dir}/"
     echo "> deploy: done"
 }
 
 start() {
-    graceful_exit_or_kill "$binary_name" 90
+    graceful_exit_or_kill "$binary_name" 90    
     echo "> run: start"
     mkdir -p "$logs_dir"
-    binary_path="${deploy_dir}/${binary_name}"
+    binary_path="${bin_dir}/${binary_name}"
     sudo setcap cap_net_bind_service=+ep "$binary_path"
     local log_file_exec="${logs_dir}/${binary_name}-exec.log"
     local log_file="${logs_dir}/${binary_name}.log"
-    nohup "$binary_path" --address=":443" --redirector=":80" --log="${log_file}" --self-signed &>> $log_file_exec &
+    nohup "$binary_path" --address=":443" --root="${assets_dir}" --redirector=":80" --log="${log_file}" &>> "${log_file_exec}" &
     echo "> run: done"
 }
 
