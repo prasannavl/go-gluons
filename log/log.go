@@ -60,12 +60,15 @@ func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
 	}
 }
 
-func (l Logger) IsEnabled(lvl Level) bool {
-	return l.filter(lvl)
+func (l Logger) Log(lvl Level, message string) {
+	if l.IsEnabled(lvl) {
+		r := newRecord(l, newMetadata(lvl), message, nil)
+		l.sink.Log(&r)
+	}
 }
 
-func (l Logger) Log(lvl Level, message string) {
-	l.Logf(lvl, message)
+func (l Logger) IsEnabled(lvl Level) bool {
+	return l.filter(lvl)
 }
 
 func (l Logger) Logv(lvl Level, args ...interface{}) {
