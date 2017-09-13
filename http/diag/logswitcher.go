@@ -12,6 +12,10 @@ import (
 )
 
 func LogLevelSwitcher(opts *LogSwitcherOpts) func(*http.ServeMux) {
+	if opts == nil {
+		o := DefaultLogSwitcherOpts()
+		opts = &o
+	}
 	return func(mux *http.ServeMux) {
 		mux.HandleFunc(opts.Path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(opts), nil))
 	}
