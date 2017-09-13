@@ -74,7 +74,7 @@ func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) htt
 
 	return r.Build(hconv.FuncToHttp(
 		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound).ServeHTTP,
-		utils.InternalServerErrorAndLog))
+		utils.HttpCodeOrLoggedInternalServerError))
 }
 
 func CreateService(logger *log.Logger, addr string, webRoot string, hosts []string,

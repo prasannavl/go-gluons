@@ -15,7 +15,8 @@ import (
 
 func LogLevelSwitcher(path string, paramName string) func(*http.ServeMux) {
 	return func(mux *http.ServeMux) {
-		mux.HandleFunc(path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(paramName), utils.LoggedHttpCodeOrInternalServerError))
+		mux.HandleFunc(path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(paramName),
+			utils.HttpCodeOrLoggedInternalServerError))
 	}
 }
 
