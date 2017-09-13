@@ -1,4 +1,4 @@
-package pprof
+package diag
 
 import (
 	"net"
@@ -19,13 +19,20 @@ func SetupHandlers(mux *http.ServeMux, pathPrefix string) {
 }
 
 func Create(addr string, path string) httpservice.Service {
+	return CreateWithConfigure(addr, path, nil)
+}
+
+func CreateWithConfigure(addr string, path string, configFn func(*http.ServeMux)) httpservice.Service {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Errorf("pprof-listener: %v", err)
+		log.Errorf("diag-listener: %v", err)
 	}
-	log.Infof("pprof endpoint: %s", l.Addr())
+	log.Infof("diag endpoint: %s", l.Addr())
 	mux := http.NewServeMux()
 	SetupHandlers(mux, path)
+	if configFn != nil {
+		configFn(mux)
+	}
 	server := &http.Server{
 		Handler:        mux,
 		IdleTimeout:    20 * time.Second,
@@ -34,5 +41,5 @@ func Create(addr string, path string) httpservice.Service {
 		ErrorLog:       nil,
 		MaxHeaderBytes: 1 << 12, // 4kb
 	}
-	return httpservice.New("pprof", server, l)
+	return httpservice.New("diag", server, l)
 }
