@@ -7,9 +7,10 @@ import (
 
 type Level uint
 
+// Power of 2
 const (
-	_                = 0
-	ErrorLevel Level = 1 << (iota - 1)
+	DisabledLevel Level = 0
+	ErrorLevel    Level = 1 << (iota - 1)
 	WarnLevel
 	InfoLevel
 	DebugLevel
@@ -274,24 +275,4 @@ func SetFilter(logger *Logger, filter func(Level) bool) {
 		filter = AllLevelsFilter
 	}
 	logger.filter = filter
-}
-
-func DisabledFilter(lvl Level) bool {
-	return false
-}
-
-func AllLevelsFilter(lvl Level) bool {
-	return true
-}
-
-func ErrorLevelFilter(lvl Level) bool {
-	return lvl <= ErrorLevel
-}
-
-func InfoLevelFilter(lvl Level) bool {
-	return lvl <= InfoLevel
-}
-
-func TraceLevelFilter(lvl Level) bool {
-	return lvl <= TraceLevel
 }

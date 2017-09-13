@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/prasannavl/go-gluons/ansicode"
@@ -26,7 +25,7 @@ func DefaultTextFormatterForHuman(r *Record) string {
 		timeFormat = "03:04:05"
 	}
 	buf.WriteString(t.Format(timeFormat))
-	buf.WriteString("  " + PaddedString(GetLogLevelString(r.Meta.Level), 5) + "  ")
+	buf.WriteString("  " + PaddedString(LogLevelString(r.Meta.Level), 5) + "  ")
 	args := r.Args
 	if r.Format == "" {
 		fmt.Fprint(&buf, args...)
@@ -108,7 +107,7 @@ func HashColoredText(name string) string {
 func DefaultTextFormatter(r *Record) string {
 	var buf bytes.Buffer
 	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
-	buf.WriteString("," + GetLogLevelString(r.Meta.Level) + ",")
+	buf.WriteString("," + LogLevelString(r.Meta.Level) + ",")
 	args := r.Args
 	if r.Format == "" {
 		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
@@ -125,37 +124,11 @@ func DefaultTextFormatter(r *Record) string {
 	return buf.String()
 }
 
-func PaddedString(s string, width int) string {
-	diff := width - len(s)
-	if diff == 1 {
-		return s + " "
-	} else if diff > 1 {
-		return s + strings.Repeat(" ", diff)
-	}
-	return s
-}
-
-func GetLogLevelString(lvl Level) string {
-	switch lvl {
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case DebugLevel:
-		return "debug"
-	case TraceLevel:
-		return "trace"
-	}
-	return "msg"
-}
-
 func logLevelColoredString(lvl Level) string {
-	return GetLogLevelColoredMsg(lvl, PaddedString(GetLogLevelString(lvl), 5))
+	return LogLevelColoredMsg(lvl, PaddedString(LogLevelString(lvl), 5))
 }
 
-func GetLogLevelColoredMsg(lvl Level, msg string) string {
+func LogLevelColoredMsg(lvl Level, msg string) string {
 	switch lvl {
 	case InfoLevel:
 		return ansicode.Blue + msg + ansicode.Reset
