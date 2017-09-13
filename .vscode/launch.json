@@ -6,6 +6,7 @@
       "type": "go",
       "request": "launch",
       "mode": "debug",
+      "env": {},
       "program": "${workspaceRoot}/http/app-http",
       "args": ["-vvvh"]
     }

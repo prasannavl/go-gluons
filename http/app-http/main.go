@@ -3,12 +3,13 @@ package main
 import (
 	"net/http"
 	"path/filepath"
+	"runtime/debug"
 
 	flag "github.com/spf13/pflag"
 
 	"fmt"
 
-	"github.com/prasannavl/go-gluons/http/pprof"
+	"github.com/prasannavl/go-gluons/http/diag"
 	"github.com/prasannavl/go-gluons/http/redirector"
 
 	"github.com/prasannavl/go-gluons/appx"
@@ -23,7 +24,7 @@ type EnvFlags struct {
 	LogDisabled    bool
 	Verbosity      int
 	DisplayVersion bool
-	PprofAddr      string
+	DiagAddr       string
 	LogHumanize    bool
 	Insecure       bool
 	RedirectorAddr string
@@ -36,7 +37,7 @@ func initFlags(env *EnvFlags) {
 	flag.BoolVar(&env.DisplayVersion, "version", false, "display the version and exit")
 	flag.CountVarP(&env.Verbosity, "verbose", "v", "verbosity level")
 	flag.StringVarP(&env.Addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
-	flag.StringVar(&env.PprofAddr, "pprof-address", "localhost:9090", "the 'host:port' for pprof")
+	flag.StringVar(&env.DiagAddr, "dapi-address", "localhost:9090", "the 'host:port' for diagnostics api")
 	flag.StringVar(&env.LogFile, "log", "", "the log file destination")
 	flag.BoolVar(&env.LogDisabled, "no-log", false, "disable the logger")
 	flag.BoolVarP(&env.LogHumanize, "log-humanize", "h", false, "humanize log messages")
@@ -89,6 +90,7 @@ func main() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorv(err)
+			debug.PrintStack()
 		}
 	}()
 
@@ -99,8 +101,8 @@ func main() {
 
 	logInitResult := initLogging(&env)
 	log.Infof("listen-address: %s", env.Addr)
-	if env.PprofAddr != "" {
-		s1 := pprof.Create(env.PprofAddr, "/pprof")
+	if env.DiagAddr != "" {
+		s1 := diag.Create(env.DiagAddr, "/")
 		go s1.Run()
 	}
 	if env.RedirectorAddr != "" {
@@ -115,10 +117,11 @@ func main() {
 
 	if err != nil {
 		log.Errorf("failed to create service: %v", err)
+		return
 	}
 
 	appx.CreateShutdownHandler(func() {
-		service.Stop(0)
+		_ = service.Stop(0)
 	}, appx.ShutdownSignals...)
 
 	err = service.Run()
