@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gobwas/glob"
+	"github.com/prasannavl/go-gluons/log"
 )
 
 type HostRouter struct {
@@ -49,11 +50,13 @@ func (h *HostRouter) Build(notFoundHandler http.Handler) http.Handler {
 		hh := func(w http.ResponseWriter, r *http.Request) {
 			hostname := hostName(r)
 			if handler, ok := items[hostname]; ok {
+				log.Trace("host-router: host: " + hostname)
 				handler.ServeHTTP(w, r)
 				return
 			}
 			for _, x := range h.PatternItems {
 				if x.matcher.Match(hostname) {
+					log.Trace("host-router: match: - " + hostname + " pattern: " + x.pattern)
 					x.handler.ServeHTTP(w, r)
 					return
 				}
@@ -67,12 +70,14 @@ func (h *HostRouter) Build(notFoundHandler http.Handler) http.Handler {
 		hostname := hostName(r)
 		for _, x := range items {
 			if x.host == hostname {
+				log.Trace("host-router: host: " + hostname)
 				x.handler.ServeHTTP(w, r)
 				return
 			}
 		}
 		for _, x := range h.PatternItems {
 			if x.matcher.Match(hostname) {
+				log.Trace("host-router: match: - " + hostname + " pattern: " + x.pattern)
 				x.handler.ServeHTTP(w, r)
 				return
 			}
