@@ -50,7 +50,7 @@ func Init(opts *Options, result *LogInitResult) {
 	if logFile == CommonTargets.TargetNull {
 		return
 	}
-	level := logLevelFromVerbosityLevel(opts.VerbosityLevel)
+	level := LogLevelFromVerbosityLevel(opts.VerbosityLevel)
 	if level == 0 {
 		return
 	}
@@ -105,7 +105,7 @@ type LogInitResult struct {
 	StdLogger *stdlog.Logger
 }
 
-func logLevelFromVerbosityLevel(vLevel int) log.Level {
+func LogLevelFromVerbosityLevel(vLevel int) log.Level {
 	switch vLevel {
 	case -1:
 		return log.ErrorLevel
