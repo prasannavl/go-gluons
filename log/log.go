@@ -60,6 +60,9 @@ func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
 	}
 }
 
+// Note: This is duplicated here instead of using Logf
+// in order to optimize the path and prevent allocations
+// when level is not enabled.
 func (l Logger) Log(lvl Level, message string) {
 	if l.IsEnabled(lvl) {
 		r := newRecord(l, newMetadata(lvl), message, nil)
