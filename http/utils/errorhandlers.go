@@ -9,29 +9,25 @@ import (
 	"github.com/prasannavl/go-gluons/log"
 )
 
-var HttpCodeOrInternalServerError = CreateHttpErrorHandler(http.StatusInternalServerError)
-var LoggedHttpCodeOrInternalServerError = CreateHttpErrorHandler(http.StatusInternalServerError)
+var HttpCodeOrInternalServerError = CreateHttpErrorHandler(http.StatusInternalServerError, false)
+var HttpCodeOrLoggedInternalServerError = CreateHttpErrorHandler(http.StatusInternalServerError, true)
 
-var InternalServerError = CreateStatusErrorHandler(http.StatusInternalServerError)
-var LoggedInternalServerError = CreateLoggedStatusErrorHandler(http.StatusInternalServerError)
+var InternalServerError = CreateStatusErrorHandler(http.StatusInternalServerError, false)
+var LoggedInternalServerError = CreateStatusErrorHandler(http.StatusInternalServerError, true)
 
-var BadRequestError = CreateStatusErrorHandler(http.StatusBadRequest)
-var LoggedBadRequestError = CreateLoggedStatusErrorHandler(http.StatusBadRequest)
+var BadRequestError = CreateStatusErrorHandler(http.StatusBadRequest, false)
+var LoggedBadRequestError = CreateStatusErrorHandler(http.StatusBadRequest, true)
 
-func CreateLoggedStatusErrorHandler(status int) mchain.ErrorHandler {
+func CreateStatusErrorHandler(status int, logErrors bool) mchain.ErrorHandler {
 	return func(err error, w http.ResponseWriter, r *http.Request) {
-		log.Errorf("error-handler: %v", err)
+		if logErrors {
+			log.Errorf("error-handler: %v", err)
+		}
 		w.WriteHeader(status)
 	}
 }
 
-func CreateStatusErrorHandler(status int) mchain.ErrorHandler {
-	return func(err error, w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(status)
-	}
-}
-
-func CreateLoggedHttpErrorHandler(fallbackStatus int) mchain.ErrorHandler {
+func CreateHttpErrorHandler(fallbackStatus int, logNonHttpErrors bool) mchain.ErrorHandler {
 	return func(err error, w http.ResponseWriter, r *http.Request) {
 		if e, ok := err.(httperror.HttpError); ok {
 			if httperror.IsServerErrorCode(e.Code()) {
@@ -39,17 +35,9 @@ func CreateLoggedHttpErrorHandler(fallbackStatus int) mchain.ErrorHandler {
 			}
 			w.WriteHeader(e.Code())
 		} else {
-			log.Errorf("error-handler: %v", err)
-			w.WriteHeader(fallbackStatus)
-		}
-	}
-}
-
-func CreateHttpErrorHandler(fallbackStatus int) mchain.ErrorHandler {
-	return func(err error, w http.ResponseWriter, r *http.Request) {
-		if e, ok := err.(httperror.HttpError); ok {
-			w.WriteHeader(e.Code())
-		} else {
+			if logNonHttpErrors {
+				log.Errorf("error-handler: %v", err)
+			}
 			w.WriteHeader(fallbackStatus)
 		}
 	}
