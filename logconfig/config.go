@@ -78,12 +78,8 @@ func Init(opts *Options, result *LogInitResult) {
 		}
 	}
 
-	sink = &log.LeveledSink{
-		MaxLevel: level,
-		Inner:    sink,
-	}
-
 	l := log.New(sink)
+	log.SetFilter(l, log.LogFilterForLevel(level))
 	log.SetLogger(l)
 	stdWriter := log.NewLogWriter(l, opts.StdLogLevel, "std: ")
 	stdlog.SetOutput(stdWriter)
