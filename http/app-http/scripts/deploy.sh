@@ -31,9 +31,12 @@ main() {
 
 build() {
     echo "> build: start"
-    echo "> build: updating deps"    
-    go get -v -u github.com/golang/dep/cmd/dep || true
-    dep ensure || true
+    echo "> build: updating deps"
+    pushd .
+    cd "$(echo ${GOPATH%%:*})" 
+    go get -v -u github.com/golang/dep/cmd/dep
+    popd
+    dep ensure
     # go get -d -u ... || true
     echo "> build: compiling"
     go build -o "${build_target}"
