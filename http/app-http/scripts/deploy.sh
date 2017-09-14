@@ -7,6 +7,7 @@ app_dir="${HOME}/run/${binary_name}"
 bin_dir="${app_dir}/bin"
 assets_dir="${app_dir}/www"
 logs_dir="${app_dir}/logs"
+cert_cache_dir="${app_dir}/cert-cache"
 
 build_assets_dir="./www"
 build_target="./bin/${binary_name}"
@@ -30,9 +31,11 @@ main() {
 
 build() {
     echo "> build: start"
-    # go get -v -u github.com/golang/dep/cmd/dep || true
-    # dep ensure || true
-    go get -d -v -u || true
+    echo "> build: updating deps"    
+    go get -v -u github.com/golang/dep/cmd/dep || true
+    dep ensure || true
+    # go get -d -u ... || true
+    echo "> build: compiling"
     go build -o "${build_target}"
     echo "> build: done"
 }
@@ -56,12 +59,12 @@ deploy() {
 start() {
     graceful_exit_or_kill "$binary_name" 90    
     echo "> run: start"
-    mkdir -p "$logs_dir"
+    mkdir -p "$logs_dir" "$cert_cache_dir"
     binary_path="${bin_dir}/${binary_name}"
     sudo setcap cap_net_bind_service=+ep "$binary_path"
     local log_file_exec="${logs_dir}/${binary_name}-exec.log"
     local log_file="${logs_dir}/${binary_name}.log"
-    nohup "$binary_path" --address=":443" --root="${assets_dir}" --redirector=":80" --log="${log_file}" &>> "${log_file_exec}" &
+    nohup "$binary_path" --address=":443" --root="${assets_dir}" --redirector=":80" --cert-dir="${cert_cache_dir}" --log="${log_file}" &>> "${log_file_exec}" &
     echo "> run: done"
 }
 
