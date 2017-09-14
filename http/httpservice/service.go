@@ -5,14 +5,15 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 )
 
 type HttpService struct {
-	name      string
-	server    *http.Server
-	l         net.Listener
-	isRunning bool
+	name          string
+	server        *http.Server
+	l             net.Listener
+	isRunningFlag int32
 }
 
 func New(name string, server *http.Server, listener net.Listener) Service {
@@ -20,20 +21,16 @@ func New(name string, server *http.Server, listener net.Listener) Service {
 }
 
 func (r *HttpService) IsRunning() bool {
-	return r.isRunning
+	return atomic.LoadInt32(&r.isRunningFlag) == 1
 }
 
 func (r *HttpService) Run() error {
-	if !r.isRunning {
-		var err error
-		r.isRunning = true
-		err = r.server.Serve(r.l)
-		if err != nil {
-			r.isRunning = false
-		}
+	if atomic.CompareAndSwapInt32(&r.isRunningFlag, 0, 1) {
+		err := r.server.Serve(r.l)
+		atomic.StoreInt32(&r.isRunningFlag, 0)
 		return err
 	}
-	return errors.New("service attempted to start while already running")
+	return errors.New("service attempted to start while running/in-transition")
 }
 
 func (r *HttpService) Name() string {
@@ -41,7 +38,7 @@ func (r *HttpService) Name() string {
 }
 
 func (r *HttpService) Stop(timeout time.Duration) error {
-	if r.isRunning {
+	if atomic.LoadInt32(&r.isRunningFlag) == 1 {
 		var ctx context.Context
 		var cancel context.CancelFunc
 		if timeout == 0 {
@@ -53,7 +50,6 @@ func (r *HttpService) Stop(timeout time.Duration) error {
 		if cancel != nil {
 			cancel()
 		}
-		r.isRunning = false
 		return err
 	}
 	return errors.New("service attempted to stop when not running")
