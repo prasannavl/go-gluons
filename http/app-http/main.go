@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/prasannavl/go-gluons/http/diag"
+	"github.com/prasannavl/go-gluons/http/httpservice"
 	"github.com/prasannavl/go-gluons/http/redirector"
 
 	"github.com/prasannavl/go-gluons/appx"
@@ -31,6 +32,7 @@ type EnvFlags struct {
 	UseSelfSigned  bool
 	Hosts          []string
 	WebRoot        string
+	CertCacheDir   string
 }
 
 func initFlags(env *EnvFlags) {
@@ -46,6 +48,7 @@ func initFlags(env *EnvFlags) {
 	flag.StringVar(&env.RedirectorAddr, "redirector", "", "a redirector address as 'host:port' to enable")
 	flag.StringArrayVar(&env.Hosts, "hosts", nil, "'host:port' items to enable hosts filter")
 	flag.StringVar(&env.WebRoot, "root", "", "web root path")
+	flag.StringVar(&env.CertCacheDir, "cert-dir", "", "the auto-tls certificate cache dir")
 
 	flag.Usage = func() {
 		printPackageHeader(false)
@@ -112,10 +115,19 @@ func main() {
 		go s2.Run()
 	}
 
-	service, err := app.CreateService(
-		logInitResult.Logger, env.Addr,
-		filepath.Clean(env.WebRoot),
-		env.Hosts, env.Insecure, env.UseSelfSigned)
+	opts := httpservice.HandlerServiceOpts{
+		Addr:     env.Addr,
+		Logger:   logInitResult.Logger,
+		WebRoot:  filepath.Clean(env.WebRoot),
+		Hosts:    env.Hosts,
+		CacheDir: env.CertCacheDir,
+	}
+
+	if env.Insecure {
+		opts.Insecure = true
+	}
+
+	service, err := app.CreateService(&opts)
 
 	if err != nil {
 		log.Errorf("failed to create service: %v", err)

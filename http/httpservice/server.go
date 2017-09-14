@@ -5,6 +5,7 @@ import (
 	stdlog "log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/prasannavl/go-gluons/cert"
@@ -12,12 +13,35 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-func NewHandlerService(logger *log.Logger, addr string, handler http.Handler,
-	webRoot string, hosts []string, insecure bool, useSelfSigned bool) (Service, error) {
+type HandlerServiceOpts struct {
+	Logger        *log.Logger
+	Addr          string
+	Handler       http.Handler
+	WebRoot       string
+	ServiceName   string
+	Insecure      bool
+	Hosts         []string
+	CacheDir      string
+	UseSelfSigned bool
+}
 
-	stdErrLog := stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
+type TLSOpts struct {
+	Addr          string
+	Hosts         []string
+	CacheDir      string
+	UseSelfSigned bool
+}
+
+func NewHandlerService(opts *HandlerServiceOpts) (Service, error) {
+	logger := opts.Logger
+	addr := opts.Addr
+
+	var stdErrLog *stdlog.Logger
+	if logger != nil {
+		stdErrLog = stdlog.New(log.NewLogWriter(logger, log.ErrorLevel, ""), "", 0)
+	}
 	server := &http.Server{
-		Handler:        handler,
+		Handler:        opts.Handler,
 		IdleTimeout:    20 * time.Second,
 		ReadTimeout:    20 * time.Second,
 		WriteTimeout:   20 * time.Second,
@@ -28,23 +52,34 @@ func NewHandlerService(logger *log.Logger, addr string, handler http.Handler,
 	var listener net.Listener
 
 	var err error
-	if insecure {
+	if opts.Insecure {
 		listener, err = net.Listen("tcp", addr)
 	} else {
 		tlsConf := tls.Config{
 			NextProtos: []string{"h2", "http/1.1"},
 		}
-		listener, err = CreateTLSListener(addr, &tlsConf, useSelfSigned, hosts)
+		tlsOpts := TLSOpts{
+			Addr:          addr,
+			CacheDir:      opts.CacheDir,
+			UseSelfSigned: opts.UseSelfSigned,
+			Hosts:         opts.Hosts,
+		}
+		listener, err = CreateTLSListener(&tlsOpts, &tlsConf)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return New(addr, server, listener), nil
+	serviceName := opts.ServiceName
+	if serviceName == "" {
+		serviceName = addr
+	}
+	return New(serviceName, server, listener), nil
 }
 
-func CreateTLSListener(addr string, tlsConf *tls.Config, useSelfSigned bool, tlsHosts []string) (net.Listener, error) {
-	if useSelfSigned || len(tlsHosts) == 0 {
+func CreateTLSListener(opts *TLSOpts, tlsConf *tls.Config) (net.Listener, error) {
+	tlsHosts := opts.Hosts
+	if opts.UseSelfSigned || len(tlsHosts) == 0 {
 		tcert, err := cert.CreateSelfSignedRandomX509("Local", nil)
 		if err != nil {
 			return nil, err
@@ -54,8 +89,34 @@ func CreateTLSListener(addr string, tlsConf *tls.Config, useSelfSigned bool, tls
 		certMgr := &autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(tlsHosts...),
+			Cache:      autocert.DirCache(opts.CacheDir),
 		}
 		tlsConf.GetCertificate = certMgr.GetCertificate
 	}
-	return tls.Listen("tcp", addr, tlsConf)
+	return tls.Listen("tcp", opts.Addr, tlsConf)
+}
+
+func CreateHandlerServiceOpts(addr string, handler http.Handler) HandlerServiceOpts {
+	wd, _ := os.Getwd()
+	return HandlerServiceOpts{
+		Addr:     addr,
+		Handler:  handler,
+		Insecure: true,
+		WebRoot:  wd,
+	}
+}
+
+func CreateSelfSignedTLSOpts(addr string) TLSOpts {
+	return TLSOpts{
+		Addr:          addr,
+		UseSelfSigned: true,
+	}
+}
+
+func CreateTLSOpts(addr string, certCacheDir string, hosts ...string) TLSOpts {
+	return TLSOpts{
+		Addr:     addr,
+		CacheDir: certCacheDir,
+		Hosts:    hosts,
+	}
 }
