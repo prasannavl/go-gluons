@@ -203,7 +203,7 @@ func alternateFileName(filename string) string {
 
 func ensureFileParentDir(path string) error {
 	d := filepath.Dir(path)
-	err := os.MkdirAll(d, os.FileMode(0777))
+	err := os.MkdirAll(d, os.FileMode(0755))
 	if err != nil {
 		return err
 	}
