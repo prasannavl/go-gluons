@@ -36,7 +36,10 @@ func HttpRedirectHandler(url string, code int) http.Handler {
 }
 
 func RedirectHandler(url string, code int) mchain.Handler {
-	return hconv.FromHttp(&redirectHandler{url, code})
+	// Use recoverPanic as false, since no panic is raised in
+	// this module, and if a panic occurs there's something
+	// seriously wrong, and it's okay to bubble it.
+	return hconv.FromHttp(&redirectHandler{url, code}, false)
 }
 
 // Redirect replies to the request with a redirect to url,

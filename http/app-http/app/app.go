@@ -72,8 +72,8 @@ func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) htt
 
 	notFoundFilePath := webRoot + "/error/404.html"
 
-	return r.Build(hconv.FuncToHttp(
-		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound).ServeHTTP,
+	return r.Build(hconv.ToHttp(
+		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound),
 		utils.HttpCodeOrLoggedInternalServerError))
 }
 

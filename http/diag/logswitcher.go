@@ -17,7 +17,7 @@ func LogLevelSwitcher(opts *LogSwitcherOpts) func(*http.ServeMux) {
 		opts = &o
 	}
 	return func(mux *http.ServeMux) {
-		mux.HandleFunc(opts.Path, hconv.FuncToHttp(LogLevelSwitchHandlerFunc(opts), nil))
+		mux.Handle(opts.Path, hconv.ToHttp(LogLevelSwitchHandlerFunc(opts), nil))
 	}
 }
 
