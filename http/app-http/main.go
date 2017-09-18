@@ -118,11 +118,12 @@ func main() {
 	}
 
 	opts := httpservice.HandlerServiceOpts{
-		Addr:     env.Addr,
-		Logger:   logInitResult.Logger,
-		WebRoot:  filepath.Clean(env.WebRoot),
-		Hosts:    env.Hosts,
-		CacheDir: env.CertCacheDir,
+		Addr:          env.Addr,
+		Logger:        logInitResult.Logger,
+		WebRoot:       filepath.Clean(env.WebRoot),
+		Hosts:         env.Hosts,
+		CacheDir:      env.CertCacheDir,
+		UseSelfSigned: env.UseSelfSigned,
 	}
 
 	if env.Insecure {
