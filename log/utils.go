@@ -14,12 +14,12 @@ func ErrorLevelFilter(lvl Level) bool {
 	return lvl <= ErrorLevel
 }
 
-func InfoLevelFilter(lvl Level) bool {
-	return lvl <= InfoLevel
-}
-
 func WarnLevelFilter(lvl Level) bool {
 	return lvl <= WarnLevel
+}
+
+func InfoLevelFilter(lvl Level) bool {
+	return lvl <= InfoLevel
 }
 
 func DebugLevelFilter(lvl Level) bool {
@@ -51,12 +51,12 @@ func LogLevelFromString(level string) Level {
 
 func LogLevelString(lvl Level) string {
 	switch lvl {
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
 	case ErrorLevel:
 		return "error"
+	case WarnLevel:
+		return "warn"
+	case InfoLevel:
+		return "info"
 	case DebugLevel:
 		return "debug"
 	case TraceLevel:
@@ -69,12 +69,12 @@ func LogLevelString(lvl Level) string {
 
 func LogFilterForLevel(lvl Level) func(Level) bool {
 	switch lvl {
-	case InfoLevel:
-		return InfoLevelFilter
-	case WarnLevel:
-		return WarnLevelFilter
 	case ErrorLevel:
 		return ErrorLevelFilter
+	case WarnLevel:
+		return WarnLevelFilter
+	case InfoLevel:
+		return InfoLevelFilter
 	case DebugLevel:
 		return DebugLevelFilter
 	case TraceLevel:
@@ -88,7 +88,7 @@ func LogFilterForLevel(lvl Level) func(Level) bool {
 
 func IsValidLevel(lvl Level) bool {
 	switch lvl {
-	case DisabledLevel, InfoLevel, WarnLevel, ErrorLevel, DebugLevel, TraceLevel:
+	case DisabledLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel:
 		return true
 	default:
 		return false

@@ -13,7 +13,7 @@ func TestPrint(t *testing.T) {
 		&log.LeveledSink{
 			MaxLevel: log.InfoLevel,
 			Inner: &log.StreamSink{
-				Formatter: log.DefaultTextFormatterForHuman,
+				Formatter: log.DefaultColorTextFormatterForHuman,
 				Stream:    os.Stdout,
 			},
 		},

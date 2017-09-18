@@ -130,12 +130,12 @@ func logLevelColoredString(lvl Level) string {
 
 func LogLevelColoredMsg(lvl Level, msg string) string {
 	switch lvl {
-	case InfoLevel:
-		return ansicode.Blue + msg + ansicode.Reset
-	case WarnLevel:
-		return ansicode.YellowBright + msg + ansicode.Reset
 	case ErrorLevel:
 		return ansicode.RedBright + msg + ansicode.Reset
+	case WarnLevel:
+		return ansicode.YellowBright + msg + ansicode.Reset
+	case InfoLevel:
+		return ansicode.Blue + msg + ansicode.Reset
 	case DebugLevel:
 		return ansicode.White + msg + ansicode.Reset
 	case TraceLevel:

@@ -71,24 +71,26 @@ func (l Logger) Log(lvl Level, message string) {
 	}
 }
 
-func (l Logger) IsEnabled(lvl Level) bool {
-	return l.filter(lvl)
-}
-
 func (l Logger) Logv(lvl Level, args ...interface{}) {
 	l.Logf(lvl, "", args...)
 }
 
-func (l Logger) Info(message string) {
-	l.Log(InfoLevel, message)
+func (l Logger) IsEnabled(lvl Level) bool {
+	return l.filter(lvl)
+}
+
+// Leveled Log methods
+
+func (l Logger) Error(message string) {
+	l.Log(ErrorLevel, message)
 }
 
 func (l Logger) Warn(message string) {
 	l.Log(WarnLevel, message)
 }
 
-func (l Logger) Error(message string) {
-	l.Log(ErrorLevel, message)
+func (l Logger) Info(message string) {
+	l.Log(InfoLevel, message)
 }
 
 func (l Logger) Debug(message string) {
@@ -99,16 +101,18 @@ func (l Logger) Trace(message string) {
 	l.Log(TraceLevel, message)
 }
 
-func (l Logger) Infov(args ...interface{}) {
-	l.Logv(InfoLevel, args...)
+// Logv methods
+
+func (l Logger) Errorv(args ...interface{}) {
+	l.Logv(ErrorLevel, args...)
 }
 
 func (l Logger) WarnV(args ...interface{}) {
 	l.Logv(WarnLevel, args...)
 }
 
-func (l Logger) Errorv(args ...interface{}) {
-	l.Logv(ErrorLevel, args...)
+func (l Logger) Infov(args ...interface{}) {
+	l.Logv(InfoLevel, args...)
 }
 
 func (l Logger) Debugv(args ...interface{}) {
@@ -119,16 +123,18 @@ func (l Logger) Tracev(args ...interface{}) {
 	l.Logv(TraceLevel, args...)
 }
 
-func (l Logger) Infof(format string, args ...interface{}) {
-	l.Logf(InfoLevel, format, args...)
+// Logf methods
+
+func (l Logger) Errorf(format string, args ...interface{}) {
+	l.Logf(ErrorLevel, format, args...)
 }
 
 func (l Logger) Warnf(format string, args ...interface{}) {
 	l.Logf(WarnLevel, format, args...)
 }
 
-func (l Logger) Errorf(format string, args ...interface{}) {
-	l.Logf(ErrorLevel, format, args...)
+func (l Logger) Infof(format string, args ...interface{}) {
+	l.Logf(InfoLevel, format, args...)
 }
 
 func (l Logger) Debugf(format string, args ...interface{}) {
@@ -169,16 +175,18 @@ func Logv(lvl Level, args ...interface{}) {
 	g.Logv(lvl, args...)
 }
 
-func Info(message string) {
-	g.Info(message)
+// Log methods
+
+func Error(message string) {
+	g.Error(message)
 }
 
 func Warn(message string) {
 	g.Warn(message)
 }
 
-func Error(message string) {
-	g.Error(message)
+func Info(message string) {
+	g.Info(message)
 }
 
 func Debug(message string) {
@@ -189,16 +197,18 @@ func Trace(message string) {
 	g.Trace(message)
 }
 
-func Infov(args ...interface{}) {
-	g.Infov(args...)
+// Logv methods
+
+func Errorv(args ...interface{}) {
+	g.Errorv(args...)
 }
 
 func WarnV(args ...interface{}) {
 	g.WarnV(args...)
 }
 
-func Errorv(args ...interface{}) {
-	g.Errorv(args...)
+func Infov(args ...interface{}) {
+	g.Infov(args...)
 }
 
 func Debugv(args ...interface{}) {
@@ -209,16 +219,18 @@ func Tracev(args ...interface{}) {
 	g.Tracev(args...)
 }
 
-func Infof(format string, args ...interface{}) {
-	g.Infof(format, args...)
+// Logf methods
+
+func Errorf(format string, args ...interface{}) {
+	g.Errorf(format, args...)
 }
 
 func Warnf(format string, args ...interface{}) {
 	g.Warnf(format, args...)
 }
 
-func Errorf(format string, args ...interface{}) {
-	g.Errorf(format, args...)
+func Infof(format string, args ...interface{}) {
+	g.Infof(format, args...)
 }
 
 func Debugf(format string, args ...interface{}) {
