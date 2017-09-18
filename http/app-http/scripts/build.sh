@@ -26,17 +26,16 @@ init() {
 }
 
 setup_vars() {
-    setup_bin_name
-    BUILD_TARGET="${BUILD_TARGET:-${BIN_NAME}}"
-    ASSETS_DIR="./www"
-    BUILD_PACKAGE="${BUILD_TARGET/%.exe}.tar.gz"
+    PKG_BASE_NAME="$(basename $(pwd))"
+    BUILD_TARGET="${BUILD_TARGET:-${PKG_BASE_NAME}}"
+    ASSETS_DIR="./assets"
+    
+    BUILD_PACKAGE="${BUILD_TARGET}.tar.gz"
     RUN_SCRIPT="./scripts/run.sh"
+
     DEPLOY_SERVER="labs.prasannavl.com"
     DEPLOY_TARBALL_DIR="apps.tarballs"
     DEPLOY_DIR="apps/${BUILD_TARGET}"
-    if [[ "$GOOS" == "linux" ]]; then 
-        BUILD_TARGET="${BUILD_TARGET/%.exe}"
-    fi;
 }
 
 clean() {
@@ -67,7 +66,7 @@ pack() {
         run
     fi
     echo "> pack: start"    
-    tar -zvcf "$BUILD_PACKAGE" "$BUILD_TARGET" "$ASSETS_DIR" $RUN_SCRIPT
+    tar -zvcf "$BUILD_PACKAGE" "$BUILD_TARGET" "$ASSETS_DIR" "$RUN_SCRIPT"
     echo "> pack: done"
 }
 
@@ -77,27 +76,22 @@ deploy() {
         pack
     fi
     echo "> deploy: start"
-    ssh $DEPLOY_SERVER mkdir -p "${DEPLOY_TARBALL_DIR}" "${DEPLOY_DIR}"
-    rsync -avu "$BUILD_PACKAGE" $DEPLOY_SERVER:"$DEPLOY_TARBALL_DIR" --progress
-    ssh $DEPLOY_SERVER "
-    rm -rf \"${DEPLOY_DIR}/*\" &&
+
+    local pre_script="
+    mkdir -p \"${DEPLOY_TARBALL_DIR}\" \"${DEPLOY_DIR}\"
+    "
+    
+    local post_script="
+    rm -rf \"${DEPLOY_DIR}/{${BUILD_TARGET},${ASSETS_DIR}}\" &&
     tar -xvzf \"${DEPLOY_TARBALL_DIR}/${BUILD_PACKAGE}\" -C \"${DEPLOY_DIR}\" &&
     chmod +x \"${DEPLOY_DIR}/${RUN_SCRIPT}\" &&
     \"${DEPLOY_DIR}/${RUN_SCRIPT}\"
-    " 
-    echo "> deploy: end"
-}
+    "
 
-setup_bin_name() {
-    if [ -n "$BIN_NAME" ]; then
-        return
-    fi;
-    local cname=$(basename $(pwd))
-    local cbin_name="${cname}"
-    if [[ $(uname -s) == MINGW* ]]; then
-        cbin_name="${cbin_name}.exe"
-    fi
-    BIN_NAME="${cbin_name}"
+    ssh $DEPLOY_SERVER "${pre_script}"
+    rsync -avu "$BUILD_PACKAGE" $DEPLOY_SERVER:"$DEPLOY_TARBALL_DIR" --progress    
+    ssh $DEPLOY_SERVER "${post_script}"
+    echo "> deploy: end"
 }
 
 if [ -z "$@" ]; then

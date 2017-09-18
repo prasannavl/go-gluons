@@ -24,10 +24,10 @@ init() {
 }
 
 setup_vars() {
-    setup_bin_name
-    PACKAGE_NAME="${BIN_NAME/%.exe}"
+    PKG_BASE_NAME="$(basename $(pwd))"
+    BIN_NAME="${BIN_NAME:-${PKG_BASE_NAME}}"
     LOGS_DIR="./logs"
-    ASSETS_DIR="./www"
+    ASSETS_DIR="./assets"
     CERT_DIR_CACHE="./cert-cache"
 }
 
@@ -36,11 +36,9 @@ start() {
     echo "> run: start"
     mkdir -p "$LOGS_DIR" "$CERT_DIR_CACHE"
     local binary_path="./${BIN_NAME}"
-    if [[ $(uname -s) != MINGW* ]]; then
-        sudo setcap cap_net_bind_service=+ep "$binary_path"
-    fi;
-    local log_file_exec="${LOGS_DIR}/${PACKAGE_NAME}-exec.log"
-    local log_file="${LOGS_DIR}/${PACKAGE_NAME}.log"  
+    sudo setcap cap_net_bind_service=+ep "$binary_path"
+    local log_file_exec="${LOGS_DIR}/${PKG_BASE_NAME}-exec.log"
+    local log_file="${LOGS_DIR}/${PKG_BASE_NAME}.log"  
 
     local cmd=$(echo "$binary_path" --address=":443" --root="${ASSETS_DIR}" --redirector=":80" --cert-dir="${CERT_DIR_CACHE}" --log="${log_file}")
 
@@ -65,18 +63,6 @@ graceful_exit_or_kill() {
             break
         fi;
     done
-}
-
-setup_bin_name() {
-    if [ -n "$BIN_NAME" ]; then
-        return
-    fi;
-    local cname=$(basename $(pwd))
-    local cbin_name="${cname}"
-    if [[ $(uname -s) == MINGW* ]]; then
-        cbin_name="${cbin_name}.exe"
-    fi
-    BIN_NAME="${cbin_name}"
 }
 
 if [ -z "$@" ]; then
