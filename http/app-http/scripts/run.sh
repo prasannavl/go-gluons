@@ -32,7 +32,7 @@ setup_vars() {
 }
 
 start() {
-    graceful_exit_or_kill "./$BIN_NAME" 90
+    stop
     echo "> run: start"
     mkdir -p "$LOGS_DIR" "$CERT_DIR_CACHE"
     local binary_path="./${BIN_NAME}"
@@ -48,21 +48,26 @@ start() {
     echo "> run: done"
 }
 
-graceful_exit_or_kill() {
+stop() {
+    try_exit_or_kill "$BIN_NAME" 90
+}
+
+try_exit_or_kill() {
     local pid=$(pidof "$1" || false)
     if [ -z "$pid" ]; then return; fi;
     local d=$(($2*10))
-    echo "> killer: waiting for previous shutdown.. (max: ${2}s)"
+    echo "> run: stopping: $1 (max-wait: ${2}s)"
     local i=0
     while kill "$pid" &>> /dev/null; do
         sleep 0.1s
         i=$((i+1))
         if [ $i -gt $d ]; then 
-            echo "> killer: forceful termination"
+            echo "> run: sending SIG_KILL: $1"
             kill -9 "$pid" &>> /dev/null || true;
             break
         fi;
     done
+    echo "> run: stopped: $1"
 }
 
 if [ -z "$@" ]; then
