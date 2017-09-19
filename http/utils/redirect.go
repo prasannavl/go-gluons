@@ -121,3 +121,17 @@ func hexEscapeNonASCII(s string) string {
 	}
 	return string(b)
 }
+
+// LocalRedirect gives a Moved Permanently response.
+// It does not convert relative paths to absolute paths like Redirect does.
+func LocalRedirect(w http.ResponseWriter, r *http.Request, newPath string, redirectStatus int) {
+	w.Header().Set("Location", LocalRedirectPath(r, newPath))
+	w.WriteHeader(redirectStatus)
+}
+
+func LocalRedirectPath(r *http.Request, newPath string) string {
+	if q := r.URL.RawQuery; q != "" {
+		newPath += "?" + q
+	}
+	return newPath
+}

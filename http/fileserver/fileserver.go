@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prasannavl/go-gluons/http/utils"
+
 	"github.com/prasannavl/goerror"
 	"github.com/prasannavl/goerror/httperror"
 )
@@ -25,7 +27,7 @@ func (f *httpFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e := err.(*Err)
 		switch e.Kind {
 		case ErrRedirect:
-			localRedirect(w, r, e.Data.(string))
+			utils.LocalRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
 		default:
 			http.Error(w, e.Error(), e.Code())
 			//  Alternatively, handle the dir listing.
@@ -157,16 +159,6 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 	return nil
 }
 
-// localRedirect gives a Moved Permanently response.
-// It does not convert relative paths to absolute paths like Redirect does.
-func localRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
-	if q := r.URL.RawQuery; q != "" {
-		newPath += "?" + q
-	}
-	w.Header().Set("Location", newPath)
-	w.WriteHeader(http.StatusMovedPermanently)
-}
-
 // condResult is the result of an HTTP request precondition check.
 // See https://tools.ietf.org/html/rfc7232 section 3.
 type condResult int
@@ -247,6 +239,7 @@ func newErr(statusHint int, kind fileServerErrorKind, message string, cause erro
 				statusHint,
 			},
 			true,
+			nil,
 		},
 		kind,
 		data,
