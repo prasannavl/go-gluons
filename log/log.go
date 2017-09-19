@@ -19,19 +19,14 @@ const (
 
 type Logger struct {
 	sink   Sink
-	fields []Field
 	filter func(Level) bool
+	fields []Field
 }
 
 type Record struct {
-	l      Logger
 	Meta   Metadata
 	Format string
 	Args   []interface{}
-}
-
-func (r *Record) Fields() []Field {
-	return r.l.fields
 }
 
 type Field struct {
@@ -40,23 +35,25 @@ type Field struct {
 }
 
 type Metadata struct {
-	Level Level
-	Time  time.Time
-	File  string
-	Line  uint
+	Logger *Logger
+	Level  Level
+	Time   time.Time
+	File   string
+	Line   uint
 }
 
-func newRecord(l Logger, m Metadata, format string, args []interface{}) Record {
-	return Record{l: l, Meta: m, Format: format, Args: args}
+func newRecord(l *Logger, lvl Level, format string, args []interface{}) Record {
+	// Add skip arg here, and do runtime.Callers if needed to set File, and Line
+	return Record{Meta: newMetadata(l, lvl), Format: format, Args: args}
 }
 
-func newMetadata(lvl Level) Metadata {
-	return Metadata{Level: lvl, Time: time.Now()}
+func newMetadata(l *Logger, lvl Level) Metadata {
+	return Metadata{Logger: l, Level: lvl, Time: time.Now()}
 }
 
-func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
+func (l *Logger) Logf(lvl Level, format string, args ...interface{}) {
 	if l.IsEnabled(lvl) {
-		r := newRecord(l, newMetadata(lvl), format, args)
+		r := newRecord(l, lvl, format, args)
 		l.sink.Log(&r)
 	}
 }
@@ -64,103 +61,103 @@ func (l Logger) Logf(lvl Level, format string, args ...interface{}) {
 // Note: This is duplicated here instead of using Logf
 // in order to optimize the path and prevent allocations
 // when level is not enabled.
-func (l Logger) Log(lvl Level, message string) {
+func (l *Logger) Log(lvl Level, message string) {
 	if l.IsEnabled(lvl) {
-		r := newRecord(l, newMetadata(lvl), message, nil)
+		r := newRecord(l, lvl, message, nil)
 		l.sink.Log(&r)
 	}
 }
 
-func (l Logger) Logv(lvl Level, args ...interface{}) {
+func (l *Logger) Logv(lvl Level, args ...interface{}) {
 	l.Logf(lvl, "", args...)
 }
 
-func (l Logger) IsEnabled(lvl Level) bool {
+func (l *Logger) IsEnabled(lvl Level) bool {
 	return l.filter(lvl)
 }
 
 // Leveled Log methods
 
-func (l Logger) Error(message string) {
+func (l *Logger) Error(message string) {
 	l.Log(ErrorLevel, message)
 }
 
-func (l Logger) Warn(message string) {
+func (l *Logger) Warn(message string) {
 	l.Log(WarnLevel, message)
 }
 
-func (l Logger) Info(message string) {
+func (l *Logger) Info(message string) {
 	l.Log(InfoLevel, message)
 }
 
-func (l Logger) Debug(message string) {
+func (l *Logger) Debug(message string) {
 	l.Log(DebugLevel, message)
 }
 
-func (l Logger) Trace(message string) {
+func (l *Logger) Trace(message string) {
 	l.Log(TraceLevel, message)
 }
 
 // Logv methods
 
-func (l Logger) Errorv(args ...interface{}) {
+func (l *Logger) Errorv(args ...interface{}) {
 	l.Logv(ErrorLevel, args...)
 }
 
-func (l Logger) WarnV(args ...interface{}) {
+func (l *Logger) WarnV(args ...interface{}) {
 	l.Logv(WarnLevel, args...)
 }
 
-func (l Logger) Infov(args ...interface{}) {
+func (l *Logger) Infov(args ...interface{}) {
 	l.Logv(InfoLevel, args...)
 }
 
-func (l Logger) Debugv(args ...interface{}) {
+func (l *Logger) Debugv(args ...interface{}) {
 	l.Logv(DebugLevel, args...)
 }
 
-func (l Logger) Tracev(args ...interface{}) {
+func (l *Logger) Tracev(args ...interface{}) {
 	l.Logv(TraceLevel, args...)
 }
 
 // Logf methods
 
-func (l Logger) Errorf(format string, args ...interface{}) {
+func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.Logf(ErrorLevel, format, args...)
 }
 
-func (l Logger) Warnf(format string, args ...interface{}) {
+func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.Logf(WarnLevel, format, args...)
 }
 
-func (l Logger) Infof(format string, args ...interface{}) {
+func (l *Logger) Infof(format string, args ...interface{}) {
 	l.Logf(InfoLevel, format, args...)
 }
 
-func (l Logger) Debugf(format string, args ...interface{}) {
+func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.Logf(DebugLevel, format, args...)
 }
 
-func (l Logger) Tracef(format string, args ...interface{}) {
+func (l *Logger) Tracef(format string, args ...interface{}) {
 	l.Logf(TraceLevel, format, args...)
 }
 
-func (l Logger) Flush() {
+func (l *Logger) Flush() {
 	l.sink.Flush()
 }
 
-func (l Logger) With(name string, value interface{}) Logger {
+func (l *Logger) With(name string, value interface{}) Logger {
 	s := make([]Field, 0, len(l.fields)+1)
 	s = append(s, l.fields...)
 	s = append(s, Field{name, value})
-	return Logger{l.sink, s, l.filter}
+	return Logger{l.sink, l.filter, s}
 }
 
-func (l Logger) WithFields(fields []Field) Logger {
+func (l *Logger) WithFields(fields []Field) Logger {
 	s := make([]Field, 0, len(l.fields)+len(fields))
 	s = append(s, l.fields...)
 	s = append(s, fields...)
-	return Logger{l.sink, s, l.filter}
+	return Logger{l.sink, l.filter, s}
 }
 
 func Logf(lvl Level, format string, args ...interface{}) {
@@ -261,7 +258,7 @@ func init() {
 	g = &Logger{
 		sink: &StreamSink{
 			Stream:    os.Stderr,
-			Formatter: DefaultColorTextFormatterForHuman,
+			Formatter: DefaultTextFormatterForHuman,
 		},
 	}
 }
@@ -275,11 +272,15 @@ func GetLogger() *Logger {
 }
 
 func New(sink Sink) *Logger {
-	return &Logger{sink, nil, AllLevelsFilter}
+	return &Logger{sink, AllLevelsFilter, nil}
 }
 
 func GetSink(logger *Logger) Sink {
 	return logger.sink
+}
+
+func GetFilter(logger *Logger) func(Level) bool {
+	return logger.filter
 }
 
 func SetFilter(logger *Logger, filter func(Level) bool) {
@@ -287,4 +288,8 @@ func SetFilter(logger *Logger, filter func(Level) bool) {
 		filter = AllLevelsFilter
 	}
 	logger.filter = filter
+}
+
+func GetFields(logger *Logger) []Field {
+	return logger.fields
 }

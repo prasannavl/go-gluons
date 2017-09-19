@@ -9,11 +9,31 @@ import (
 	"github.com/prasannavl/go-gluons/ansicode"
 )
 
-var initTime = time.Now()
-
 type ColorStringer interface {
 	ColorString() string
 }
+
+func DefaultTextFormatter(r *Record) string {
+	var buf bytes.Buffer
+	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
+	buf.WriteString("," + LogLevelString(r.Meta.Level) + ",")
+	args := r.Args
+	if r.Format == "" {
+		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
+	} else if len(args) > 0 {
+		buf.WriteString(strconv.Quote(fmt.Sprintf(r.Format, args...)))
+	} else {
+		buf.WriteString(strconv.Quote(r.Format))
+	}
+	fields := GetFields(r.Meta.Logger)
+	for _, x := range fields {
+		buf.WriteString("," + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
+	}
+	buf.WriteString("\r\n")
+	return buf.String()
+}
+
+var initTime = time.Now()
 
 func DefaultTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
@@ -34,7 +54,7 @@ func DefaultTextFormatterForHuman(r *Record) string {
 	} else {
 		buf.WriteString(r.Format)
 	}
-	for _, x := range r.Fields() {
+	for _, x := range GetFields(r.Meta.Logger) {
 		fmt.Fprintf(&buf, " %s=%v ", x.Name, x.Value)
 	}
 	buf.WriteString("\r\n")
@@ -65,7 +85,7 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 	} else {
 		buf.WriteString(r.Format)
 	}
-	for _, x := range r.Fields() {
+	for _, x := range GetFields(r.Meta.Logger) {
 		value := x.Value
 		if colorable, ok := value.(ColorStringer); ok {
 			value = colorable.ColorString()
@@ -102,26 +122,6 @@ func HashColoredText(name string) string {
 		index = 0
 	}
 	return colorMap[index] + name + ansicode.Reset
-}
-
-func DefaultTextFormatter(r *Record) string {
-	var buf bytes.Buffer
-	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
-	buf.WriteString("," + LogLevelString(r.Meta.Level) + ",")
-	args := r.Args
-	if r.Format == "" {
-		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
-	} else if len(args) > 0 {
-		buf.WriteString(strconv.Quote(fmt.Sprintf(r.Format, args...)))
-	} else {
-		buf.WriteString(strconv.Quote(r.Format))
-	}
-	ctx := r.Fields()
-	for _, x := range ctx {
-		buf.WriteString("," + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
-	}
-	buf.WriteString("\r\n")
-	return buf.String()
 }
 
 func logLevelColoredString(lvl Level) string {
