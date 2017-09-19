@@ -34,6 +34,7 @@ func CreateHttpErrorHandler(fallbackStatus int, logNonHttpErrors bool) mchain.Er
 				log.Errorf("error-handler: %v", e)
 			}
 			w.WriteHeader(e.Code())
+			e.Headers().Write(w)
 		} else {
 			if logNonHttpErrors {
 				log.Errorf("error-handler: %v", err)
