@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prasannavl/go-gluons/http/utils"
-
 	"github.com/prasannavl/goerror/errutils"
 
 	"github.com/prasannavl/goerror/httperror"
@@ -46,18 +44,20 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		if !errutils.HasMessage(e) {
 			l = l.With("cause", e.Cause())
 		}
-		l.Warnf("fileserver: %v %v", e, e.Data)
-
 		switch e.Kind {
 		case ErrRedirect:
 			if f.RedirectsEnabled {
-				utils.UnsafeRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
+				e.Headers().Write(w)
+				w.WriteHeader(http.StatusMovedPermanently)
 				return nil
 			}
 		case ErrFsOpen:
+			l.Warnf("fileserver: %v %v", e.Kind, e)
 			if f.NotFoundHandler != nil {
 				return f.NotFoundHandler(w, r)
 			}
+		default:
+			l.Warnf("fileserver: %v %v", e.Kind, e)
 		}
 	}
 	return err

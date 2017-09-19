@@ -2,6 +2,7 @@ package fileserver
 
 import (
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -27,13 +28,14 @@ func (f *httpFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e := err.(*Err)
 		switch e.Kind {
 		case ErrRedirect:
-			utils.UnsafeRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
+			e.Headers().Write(w)
+			w.WriteHeader(http.StatusMovedPermanently)
 		default:
 			http.Error(w, e.Error(), e.Code())
 			//  Alternatively, handle the dir listing.
 			// case ErrDirFound
-			//	f := e.Data.(http.File)
-			//	finished := HandleDirPrelude(w, r, f)
+			//	stat := e.Dirstat
+			//	finished := HandleDirPrelude(w, r, stat)
 			//	if !finished {
 			//		// Handle the dir listing here.
 			//	}
@@ -57,17 +59,14 @@ func ServeFile(w http.ResponseWriter, r *http.Request, name string) error {
 		// here and ".." may not be wanted.
 		// Note that name might not contain "..", for example if code (still
 		// incorrectly) used filepath.Join(myDir, r.URL.Path).
-		return newErr(http.StatusBadRequest, ErrBadRequest, "invalid URL path", nil, nil)
+		return newErr(http.StatusBadRequest, ErrBadRequest, "invalid URL path", name, nil)
 	}
 	dir, file := filepath.Split(name)
 	return serveFile(w, r, http.Dir(dir), file, false)
 }
 
-func HandleDirPrelude(w http.ResponseWriter, r *http.Request, dir http.File) (finished bool) {
-	// Note: the error is ignored for now, since this already would have been executed
-	// in before. If there's an issue here, something has gone seriously wrong,
-	// in which case, we panic anyway.
-	d, _ := dir.Stat()
+func HandleDirPrelude(w http.ResponseWriter, r *http.Request, dirstat os.FileInfo) (finished bool) {
+	d := dirstat
 	if checkIfModifiedSince(r, d.ModTime()) == condFalse {
 		writeNotModified(w)
 		return true
@@ -94,49 +93,42 @@ func isSlashRune(r rune) bool { return r == '/' || r == '\\' }
 func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name string, redirect bool) error {
 	const indexPage = "/index.html"
 
+	f, err := fs.Open(name)
+	if err != nil {
+		return newErr(http.StatusNotFound, ErrFsOpen, "", name, err)
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return newErr(http.StatusInternalServerError, ErrFsStat, "", name, err)
+	}
+
 	// redirect .../index.html to .../
 	// can't use Redirect() because that would make the path absolute,
 	// which would be a problem running under StripPrefix
 	if strings.HasSuffix(r.URL.Path, indexPage) {
-		return newErrRedirect("./")
-	}
-
-	f, err := fs.Open(name)
-	if err != nil {
-		return newErr(http.StatusNotFound, ErrFsOpen, "", err, nil)
-	}
-	defer f.Close()
-
-	d, err := f.Stat()
-	if err != nil {
-		return newErr(http.StatusInternalServerError, ErrFsStat, "", err, nil)
+		return newErrRedirect(r, "./", name)
 	}
 
 	if redirect {
 		// redirect to canonical path: / at end of directory url
 		// r.URL.Path always begins with /
 		url := r.URL.Path
-		if d.IsDir() {
+		if stat.IsDir() {
+			// redirect if the directory name doesn't end in a slash
 			if url[len(url)-1] != '/' {
-				return newErrRedirect(path.Base(url) + "/")
+				return newErrRedirect(r, path.Base(url)+"/", name)
 			}
 		} else {
 			if url[len(url)-1] == '/' {
-				return newErrRedirect("../" + path.Base(url))
+				return newErrRedirect(r, "../"+path.Base(url), name)
 			}
-		}
-	}
-
-	// redirect if the directory name doesn't end in a slash
-	if d.IsDir() {
-		url := r.URL.Path
-		if url[len(url)-1] != '/' {
-			return newErrRedirect(path.Base(url) + "/")
 		}
 	}
 
 	// use contents of index.html for directory, if present
-	if d.IsDir() {
+	if stat.IsDir() {
 		index := strings.TrimSuffix(name, "/") + indexPage
 		ff, err := fs.Open(index)
 		if err == nil {
@@ -144,18 +136,18 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 			dd, err := ff.Stat()
 			if err == nil {
 				name = index
-				d = dd
+				stat = dd
 				f = ff
 			}
 		}
 	}
 
 	// Still a directory? (we didn't find an index.html file)
-	if d.IsDir() {
-		return newErr(http.StatusForbidden, ErrDirFound, "", nil, f)
+	if stat.IsDir() {
+		return newErrDirFound(name, stat)
 	}
 
-	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
+	http.ServeContent(w, r, stat.Name(), stat.ModTime(), f)
 	return nil
 }
 
@@ -223,11 +215,12 @@ const (
 
 type Err struct {
 	httperror.HttpErr
-	Kind fileServerErrorKind
-	Data interface{}
+	Kind     fileServerErrorKind
+	Pathname string
+	Dirstat  os.FileInfo
 }
 
-func newErr(statusHint int, kind fileServerErrorKind, message string, cause error, data interface{}) error {
+func newErr(statusHint int, kind fileServerErrorKind, message string, pathname string, cause error) *Err {
 	var msg *string
 	if message != "" {
 		msg = &message
@@ -242,10 +235,20 @@ func newErr(statusHint int, kind fileServerErrorKind, message string, cause erro
 			nil,
 		},
 		kind,
-		data,
+		pathname,
+		nil,
 	}
 }
 
-func newErrRedirect(location string) error {
-	return newErr(http.StatusMovedPermanently, ErrRedirect, "", nil, location)
+func newErrDirFound(pathname string, dirstat os.FileInfo) *Err {
+	e := newErr(http.StatusForbidden, ErrDirFound, "", pathname, nil)
+	e.Dirstat = dirstat
+	return e
+}
+
+func newErrRedirect(r *http.Request, location string, pathname string) *Err {
+	path := utils.UnsafeRedirectPath(r, location)
+	e := newErr(http.StatusMovedPermanently, ErrRedirect, "", pathname, nil)
+	e.Headers().Set("Location", path)
+	return e
 }
