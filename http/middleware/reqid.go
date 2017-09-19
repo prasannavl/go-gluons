@@ -47,7 +47,7 @@ func requestIDInitOrFailHandler(r *http.Request, c *RequestContext) error {
 		return httperror.New(400, msg, true)
 	}
 	c.RequestID, _ = uuid.NewRandom()
-	c.Logger = c.Logger.With("reqid", c.RequestID)
+	c.Logger = *c.Logger.With("reqid", c.RequestID)
 	return nil
 }
 
@@ -60,7 +60,7 @@ func requestIDInitOrReuseHandler(r *http.Request, c *RequestContext) error {
 		uid, _ = uuid.NewRandom()
 	}
 	c.RequestID = uid
-	c.Logger = c.Logger.With("reqid", c.RequestID)
+	c.Logger = *c.Logger.With("reqid", c.RequestID)
 	return nil
 }
 
