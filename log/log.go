@@ -51,18 +51,17 @@ type Metadata struct {
 	Line   int
 }
 
-const skipFramesNum = 4
+const skipFramesNum = 3
 
 func logCore(l *Logger, lvl Level, format string, args []interface{}, skipStackFramesNum int) {
 	if l.IsEnabled(lvl) {
-		r := newRecord(l, lvl, format, args, skipStackFramesNum)
+		r := Record{
+			Meta:   newMetadata(l, lvl, skipStackFramesNum),
+			Format: format,
+			Args:   args,
+		}
 		l.sink.Log(&r)
 	}
-}
-
-func newRecord(l *Logger, lvl Level, format string, args []interface{}, skipStackFramesNum int) Record {
-	// Add skip arg here, and do runtime.Callers if needed to set File, and Line
-	return Record{Meta: newMetadata(l, lvl, skipStackFramesNum), Format: format, Args: args}
 }
 
 func newMetadata(l *Logger, lvl Level, skip int) Metadata {
