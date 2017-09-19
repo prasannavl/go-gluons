@@ -20,11 +20,11 @@ func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
 			startTime := time.Now()
 			err := next.ServeHTTP(w, r)
 			ctx := FromRequest(r)
-			if err != nil {
-				LogError(&ctx.Logger, err)
-				LogErrorStack(&ctx.Logger, ctx.ErrorStacks...)
-			}
 			logger := &ctx.Logger
+			if err != nil {
+				LogError(logger, err)
+				LogErrorStack(logger, ctx.ErrorStacks...)
+			}
 			sizeRaw := ww.BytesWritten()
 			if sizeRaw > 0 {
 				logger.Logf(
