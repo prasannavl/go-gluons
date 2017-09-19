@@ -146,18 +146,18 @@ func (l *Logger) Flush() {
 	l.sink.Flush()
 }
 
-func (l *Logger) With(name string, value interface{}) Logger {
+func (l *Logger) With(name string, value interface{}) *Logger {
 	s := make([]Field, 0, len(l.fields)+1)
 	s = append(s, l.fields...)
 	s = append(s, Field{name, value})
-	return Logger{l.sink, l.filter, s}
+	return &Logger{l.sink, l.filter, s}
 }
 
-func (l *Logger) WithFields(fields []Field) Logger {
+func (l *Logger) WithFields(fields []Field) *Logger {
 	s := make([]Field, 0, len(l.fields)+len(fields))
 	s = append(s, l.fields...)
 	s = append(s, fields...)
-	return Logger{l.sink, l.filter, s}
+	return &Logger{l.sink, l.filter, s}
 }
 
 func Logf(lvl Level, format string, args ...interface{}) {
@@ -242,11 +242,11 @@ func Flush() {
 	g.Flush()
 }
 
-func With(name string, val interface{}) Logger {
+func With(name string, val interface{}) *Logger {
 	return g.With(name, val)
 }
 
-func WithFields(fields []Field) Logger {
+func WithFields(fields []Field) *Logger {
 	return g.WithFields(fields)
 }
 
