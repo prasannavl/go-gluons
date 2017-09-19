@@ -27,7 +27,7 @@ func (f *httpFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e := err.(*Err)
 		switch e.Kind {
 		case ErrRedirect:
-			utils.LocalRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
+			utils.UnsafeRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
 		default:
 			http.Error(w, e.Error(), e.Code())
 			//  Alternatively, handle the dir listing.

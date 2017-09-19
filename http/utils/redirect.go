@@ -122,14 +122,14 @@ func hexEscapeNonASCII(s string) string {
 	return string(b)
 }
 
-// LocalRedirect gives a Moved Permanently response.
-// It does not convert relative paths to absolute paths like Redirect does.
-func LocalRedirect(w http.ResponseWriter, r *http.Request, newPath string, redirectStatus int) {
-	w.Header().Set("Location", LocalRedirectPath(r, newPath))
+// UnsafeRedirect  does not convert relative paths to absolute paths, or clean paths
+// like Redirect does.
+func UnsafeRedirect(w http.ResponseWriter, r *http.Request, newPath string, redirectStatus int) {
+	w.Header().Set("Location", UnsafeRedirectPath(r, newPath))
 	w.WriteHeader(redirectStatus)
 }
 
-func LocalRedirectPath(r *http.Request, newPath string) string {
+func UnsafeRedirectPath(r *http.Request, newPath string) string {
 	if q := r.URL.RawQuery; q != "" {
 		newPath += "?" + q
 	}

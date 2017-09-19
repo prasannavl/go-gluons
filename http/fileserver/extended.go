@@ -51,7 +51,7 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		switch e.Kind {
 		case ErrRedirect:
 			if f.RedirectsEnabled {
-				utils.LocalRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
+				utils.UnsafeRedirect(w, r, e.Data.(string), http.StatusMovedPermanently)
 				return nil
 			}
 		case ErrFsOpen:
