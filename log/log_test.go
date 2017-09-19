@@ -28,7 +28,7 @@ func TestPrint(t *testing.T) {
 
 	l := log.New(sink)
 	log.SetLogger(l)
-
+	log.SetFlags(l, log.FlagTime|log.FlagSrcHint)
 	log.Info("Hello there 1")
 	log.Warn("Hello there 2")
 	log.Error("Hello there 3")

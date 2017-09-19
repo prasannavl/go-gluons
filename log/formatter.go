@@ -15,8 +15,11 @@ type ColorStringer interface {
 
 func DefaultTextFormatter(r *Record) string {
 	var buf bytes.Buffer
-	buf.WriteString(r.Meta.Time.Format(time.RFC3339))
-	buf.WriteString("," + LogLevelString(r.Meta.Level) + ",")
+	f := GetFlags(r.Meta.Logger)
+	if f&FlagTime == FlagTime {
+		buf.WriteString(r.Meta.Time.Format(time.RFC3339) + ",")
+	}
+	buf.WriteString(LogLevelString(r.Meta.Level) + ",")
 	args := r.Args
 	if r.Format == "" {
 		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
@@ -29,6 +32,9 @@ func DefaultTextFormatter(r *Record) string {
 	for _, x := range fields {
 		buf.WriteString("," + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
 	}
+	if f&FlagSrcHint == FlagSrcHint {
+		buf.WriteString("," + strconv.Quote(r.Meta.File) + "," + strconv.Itoa(r.Meta.Line))
+	}
 	buf.WriteString("\r\n")
 	return buf.String()
 }
@@ -37,15 +43,18 @@ var initTime = time.Now()
 
 func DefaultTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
-	var timeFormat string
-	t := r.Meta.Time
-	if t.Sub(initTime).Hours() > 24 {
-		timeFormat = "03:04:05 (Jan 02)"
-	} else {
-		timeFormat = "03:04:05"
+	f := GetFlags(r.Meta.Logger)
+	if f&FlagTime == FlagTime {
+		var timeFormat string
+		t := r.Meta.Time
+		if t.Sub(initTime).Hours() > 24 {
+			timeFormat = "03:04:05 (Jan 02)"
+		} else {
+			timeFormat = "03:04:05"
+		}
+		buf.WriteString(t.Format(timeFormat) + " ")
 	}
-	buf.WriteString(t.Format(timeFormat))
-	buf.WriteString("  " + PaddedString(LogLevelString(r.Meta.Level), 5) + "  ")
+	buf.WriteString(PaddedString(LogLevelString(r.Meta.Level), 5) + "  ")
 	args := r.Args
 	if r.Format == "" {
 		fmt.Fprint(&buf, args...)
@@ -57,21 +66,27 @@ func DefaultTextFormatterForHuman(r *Record) string {
 	for _, x := range GetFields(r.Meta.Logger) {
 		fmt.Fprintf(&buf, " %s=%v ", x.Name, x.Value)
 	}
+	if f&FlagSrcHint == FlagSrcHint {
+		buf.WriteString(" " + r.Meta.File + ":" + strconv.Itoa(r.Meta.Line))
+	}
 	buf.WriteString("\r\n")
 	return buf.String()
 }
 
 func DefaultColorTextFormatterForHuman(r *Record) string {
 	var buf bytes.Buffer
-	t := r.Meta.Time
-	var timeFormat string
-	if t.Sub(initTime).Hours() > 24 {
-		timeFormat = "03:04:05 (Jan 02)"
-	} else {
-		timeFormat = "03:04:05"
+	f := GetFlags(r.Meta.Logger)
+	if f&FlagTime == FlagTime {
+		var timeFormat string
+		t := r.Meta.Time
+		if t.Sub(initTime).Hours() > 24 {
+			timeFormat = "03:04:05 (Jan 02)"
+		} else {
+			timeFormat = "03:04:05"
+		}
+		buf.WriteString(ansicode.BlackBright + t.Format(timeFormat) + ansicode.Reset + "  ")
 	}
-	buf.WriteString(ansicode.BlackBright + t.Format(timeFormat) + ansicode.Reset)
-	buf.WriteString("  " + logLevelColoredString(r.Meta.Level) + "  ")
+	buf.WriteString(logLevelColoredString(r.Meta.Level) + "  ")
 	args := r.Args
 	for i, a := range args {
 		if colorable, ok := a.(ColorStringer); ok {
@@ -91,6 +106,9 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 			value = colorable.ColorString()
 		}
 		fmt.Fprintf(&buf, " %s=%v ", HashColoredText(x.Name), value)
+	}
+	if f&FlagSrcHint == FlagSrcHint {
+		buf.WriteString(" " + r.Meta.File + ":" + strconv.Itoa(r.Meta.Line))
 	}
 	buf.WriteString("\r\n")
 	return buf.String()

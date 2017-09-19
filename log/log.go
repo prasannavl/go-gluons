@@ -2,6 +2,7 @@ package log
 
 import (
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -10,17 +11,26 @@ type Level uint
 // Power of 2
 const (
 	DisabledLevel Level = 0
-	ErrorLevel    Level = 1 << (iota - 1)
+	ErrorLevel          = 1 << (iota - 1)
 	WarnLevel
 	InfoLevel
 	DebugLevel
 	TraceLevel
 )
 
+type loggerFlags int
+
+const (
+	_        loggerFlags = 0
+	FlagTime             = 1 << (iota - 1)
+	FlagSrcHint
+)
+
 type Logger struct {
 	sink   Sink
 	filter func(Level) bool
 	fields []Field
+	flags  loggerFlags
 }
 
 type Record struct {
@@ -39,21 +49,34 @@ type Metadata struct {
 	Level  Level
 	Time   time.Time
 	File   string
-	Line   uint
+	Line   int
 }
 
-func newRecord(l *Logger, lvl Level, format string, args []interface{}) Record {
+var defaultSkipFrames = 3
+
+func newRecord(l *Logger, lvl Level, format string, args []interface{}, skipStackFrameN int) Record {
 	// Add skip arg here, and do runtime.Callers if needed to set File, and Line
-	return Record{Meta: newMetadata(l, lvl), Format: format, Args: args}
+	return Record{Meta: newMetadata(l, lvl, skipStackFrameN), Format: format, Args: args}
 }
 
-func newMetadata(l *Logger, lvl Level) Metadata {
-	return Metadata{Logger: l, Level: lvl, Time: time.Now()}
+func newMetadata(l *Logger, lvl Level, skip int) Metadata {
+	m := Metadata{Logger: l, Level: lvl}
+	f := l.flags
+	if f&FlagTime == FlagTime {
+		m.Time = time.Now()
+	}
+	if f&FlagSrcHint == FlagSrcHint {
+		if _, file, line, ok := runtime.Caller(skip); ok {
+			m.File = file
+			m.Line = line
+		}
+	}
+	return m
 }
 
 func (l *Logger) Logf(lvl Level, format string, args ...interface{}) {
 	if l.IsEnabled(lvl) {
-		r := newRecord(l, lvl, format, args)
+		r := newRecord(l, lvl, format, args, defaultSkipFrames)
 		l.sink.Log(&r)
 	}
 }
@@ -63,7 +86,7 @@ func (l *Logger) Logf(lvl Level, format string, args ...interface{}) {
 // when level is not enabled.
 func (l *Logger) Log(lvl Level, message string) {
 	if l.IsEnabled(lvl) {
-		r := newRecord(l, lvl, message, nil)
+		r := newRecord(l, lvl, message, nil, defaultSkipFrames)
 		l.sink.Log(&r)
 	}
 }
@@ -150,14 +173,14 @@ func (l *Logger) With(name string, value interface{}) *Logger {
 	s := make([]Field, 0, len(l.fields)+1)
 	s = append(s, l.fields...)
 	s = append(s, Field{name, value})
-	return &Logger{l.sink, l.filter, s}
+	return &Logger{l.sink, l.filter, s, l.flags}
 }
 
 func (l *Logger) WithFields(fields []Field) *Logger {
 	s := make([]Field, 0, len(l.fields)+len(fields))
 	s = append(s, l.fields...)
 	s = append(s, fields...)
-	return &Logger{l.sink, l.filter, s}
+	return &Logger{l.sink, l.filter, s, l.flags}
 }
 
 func Logf(lvl Level, format string, args ...interface{}) {
@@ -272,7 +295,7 @@ func GetLogger() *Logger {
 }
 
 func New(sink Sink) *Logger {
-	return &Logger{sink, AllLevelsFilter, nil}
+	return &Logger{sink, AllLevelsFilter, nil, FlagTime}
 }
 
 func GetSink(logger *Logger) Sink {
@@ -292,4 +315,12 @@ func SetFilter(logger *Logger, filter func(Level) bool) {
 
 func GetFields(logger *Logger) []Field {
 	return logger.fields
+}
+
+func GetFlags(logger *Logger) loggerFlags {
+	return logger.flags
+}
+
+func SetFlags(logger *Logger, flags loggerFlags) {
+	logger.flags = flags
 }
