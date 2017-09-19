@@ -42,7 +42,7 @@ func LogLevelFromString(level string) Level {
 		return DebugLevel
 	case "trace", "all":
 		return TraceLevel
-	case "off":
+	case "off", "disabled":
 		return DisabledLevel
 	default:
 		return Level(^uint(0))
