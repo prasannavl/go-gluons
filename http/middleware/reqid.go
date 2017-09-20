@@ -21,7 +21,7 @@ func CreateRequestIDHandler(reuseUpstreamID bool) mchain.Middleware {
 
 func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		err := requestIDInitOrFailHandler(r, FromRequest(r))
+		err := requestIDInitOrFailHandler(r, GetRequestContext(r))
 		if err != nil {
 			return err
 		}
@@ -32,7 +32,7 @@ func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
 
 func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		err := requestIDInitOrReuseHandler(r, FromRequest(r))
+		err := requestIDInitOrReuseHandler(r, GetRequestContext(r))
 		if err != nil {
 			return err
 		}

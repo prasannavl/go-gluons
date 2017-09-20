@@ -19,7 +19,7 @@ func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
 			ww := w.(writer.ResponseWriter)
 			startTime := time.Now()
 			err := next.ServeHTTP(w, r)
-			ctx := FromRequest(r)
+			ctx := GetRequestContext(r)
 			logger := &ctx.Logger
 			if err != nil {
 				LogError(logger, err)

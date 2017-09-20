@@ -11,22 +11,12 @@ import (
 	"github.com/prasannavl/go-gluons/log"
 )
 
-func getRequestLogger(r *http.Request) *log.Logger {
-	var logger *log.Logger
-	ctx := middleware.FromRequest(r)
-	if ctx != nil {
-		logger = &ctx.Logger
-	}
-	if logger != nil {
-		return logger
-	}
-	return log.GetLogger()
-}
+
 
 func StatusErrorHandler(status int, logErrors bool) mchain.ErrorHandler {
 	return func(err error, w http.ResponseWriter, r *http.Request) {
 		if logErrors {
-			logger := getRequestLogger(r)
+			logger := middleware.GetRequestLogger(r)
 			logger.Errorf("error-handler: %v", err)
 		}
 		ww := w.(writer.ResponseWriter)
@@ -42,7 +32,7 @@ func HttpErrorHandler(fallbackStatus int, logErrors bool) mchain.ErrorHandler {
 		switch e := err.(type) {
 		case httperror.HttpError:
 			if httperror.IsServerErrorCode(e.Code()) && logErrors {
-				logger := getRequestLogger(r)
+				logger := middleware.GetRequestLogger(r)
 				logger.Errorf("error-handler: %v", e)
 			}
 			if !ww.IsStatusWritten() {
@@ -51,7 +41,7 @@ func HttpErrorHandler(fallbackStatus int, logErrors bool) mchain.ErrorHandler {
 			}
 		case error:
 			if logErrors {
-				logger := getRequestLogger(r)
+				logger := GetRequestLogger(r)
 				logger.Errorf("error-handler: %v", err)
 			}
 			if !ww.IsStatusWritten() {
