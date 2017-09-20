@@ -3,22 +3,14 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/prasannavl/goerror/httperror"
+	"github.com/prasannavl/go-gluons/http/handlerutils"
 
 	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/mchain"
 )
 
-func PanicRecoveryMiddleware(next mchain.Handler) mchain.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) (err error) {
-		defer mchain.RecoverIntoError(&err)
-		err = next.ServeHTTP(w, r)
-		return err
-	}
-	return mchain.HandlerFunc(f)
-}
-
 func ErrorHandlerMiddleware(next mchain.Handler) mchain.Handler {
+	handler := handlerutils.StatusErrorHandler(http.StatusInternalServerError, false)
 	f := func(w http.ResponseWriter, r *http.Request) (err error) {
 		err = next.ServeHTTP(w, r)
 		ww := w.(writer.ResponseWriter)
@@ -26,18 +18,17 @@ func ErrorHandlerMiddleware(next mchain.Handler) mchain.Handler {
 			return err
 		}
 		if err != nil {
-			switch e := err.(type) {
-			case httperror.HttpError:
-				if !ww.IsStatusWritten() {
-					w.WriteHeader(e.Code())
-					e.Headers().Write(w)
-				}
-			case error:
-				if !ww.IsStatusWritten() {
-					ww.WriteHeader(http.StatusInternalServerError)
-				}
-			}
+			handler(err, w, r)
 		}
+		return err
+	}
+	return mchain.HandlerFunc(f)
+}
+
+func PanicRecoveryMiddleware(next mchain.Handler) mchain.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) (err error) {
+		defer mchain.RecoverIntoError(&err)
+		err = next.ServeHTTP(w, r)
 		return err
 	}
 	return mchain.HandlerFunc(f)
