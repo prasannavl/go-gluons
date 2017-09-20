@@ -1,4 +1,4 @@
-package middleware
+package reqcontext
 
 import (
 	"context"
@@ -9,27 +9,27 @@ import (
 )
 
 type RequestContext struct {
-	RequestID        uuid.UUID
-	Logger           log.Logger
-	ErrorStacks      []errorStack
+	RequestID   uuid.UUID
+	Logger      log.Logger
+	ErrorStacks []errorStack
 }
 
 type errorStack = []byte
 
 type requestContextKey struct{}
 
-func GetRequestContext(r *http.Request) *RequestContext {
+func FromRequest(r *http.Request) *RequestContext {
 	return (r.Context().Value(requestContextKey{})).(*RequestContext)
 }
 
-func WithRequestContext(r *http.Request, ctx *RequestContext) *http.Request {
+func WithContext(r *http.Request, ctx *RequestContext) *http.Request {
 	c := context.WithValue(r.Context(), requestContextKey{}, ctx)
 	return r.WithContext(c)
 }
 
 func GetRequestLogger(r *http.Request) *log.Logger {
 	var logger *log.Logger
-	ctx := GetRequestContext(r)
+	ctx := FromRequest(r)
 	if ctx != nil {
 		logger = &ctx.Logger
 	}
@@ -38,3 +38,4 @@ func GetRequestLogger(r *http.Request) *log.Logger {
 	}
 	return log.GetLogger()
 }
+

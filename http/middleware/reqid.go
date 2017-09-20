@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/mchain"
 
 	"github.com/google/uuid"
@@ -21,7 +22,7 @@ func CreateRequestIDHandler(reuseUpstreamID bool) mchain.Middleware {
 
 func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		err := requestIDInitOrFailHandler(r, GetRequestContext(r))
+		err := requestIDInitOrFailHandler(r, reqcontext.FromRequest(r))
 		if err != nil {
 			return err
 		}
@@ -32,7 +33,7 @@ func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
 
 func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		err := requestIDInitOrReuseHandler(r, GetRequestContext(r))
+		err := requestIDInitOrReuseHandler(r, reqcontext.FromRequest(r))
 		if err != nil {
 			return err
 		}
@@ -41,7 +42,7 @@ func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
 	return mchain.HandlerFunc(f)
 }
 
-func requestIDInitOrFailHandler(r *http.Request, c *RequestContext) error {
+func requestIDInitOrFailHandler(r *http.Request, c *reqcontext.RequestContext) error {
 	if _, ok := r.Header[RequestIDHeaderKey]; ok {
 		msg := fmt.Sprintf("illegal header (%s)", RequestIDHeaderKey)
 		return httperror.New(400, msg, true)
@@ -51,7 +52,7 @@ func requestIDInitOrFailHandler(r *http.Request, c *RequestContext) error {
 	return nil
 }
 
-func requestIDInitOrReuseHandler(r *http.Request, c *RequestContext) error {
+func requestIDInitOrReuseHandler(r *http.Request, c *reqcontext.RequestContext) error {
 	var uid uuid.UUID
 	if ok, err := requestIDParseFromHeaders(&uid, r.Header); err != nil {
 		msg := fmt.Sprintf("malformed header (%s)", RequestIDHeaderKey)

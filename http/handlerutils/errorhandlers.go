@@ -6,47 +6,46 @@ import (
 	"github.com/prasannavl/goerror/httperror"
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/http/middleware"
+	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/http/writer"
-	"github.com/prasannavl/go-gluons/log"
 )
-
-
 
 func StatusErrorHandler(status int, logErrors bool) mchain.ErrorHandler {
 	return func(err error, w http.ResponseWriter, r *http.Request) {
 		if logErrors {
-			logger := middleware.GetRequestLogger(r)
+			logger := reqcontext.GetRequestLogger(r)
 			logger.Errorf("error-handler: %v", err)
 		}
-		ww := w.(writer.ResponseWriter)
-		if !ww.IsStatusWritten() {
-			w.WriteHeader(status)
+		if ww, ok := w.(writer.ResponseWriter); ok {
+			if !ww.IsStatusWritten() {
+				w.WriteHeader(status)
+			}
+			return
 		}
+		w.WriteHeader(status)
 	}
 }
 
 func HttpErrorHandler(fallbackStatus int, logErrors bool) mchain.ErrorHandler {
+	statusErrorHandler := StatusErrorHandler(fallbackStatus, logErrors)
 	return func(err error, w http.ResponseWriter, r *http.Request) {
-		ww := w.(writer.ResponseWriter)
 		switch e := err.(type) {
 		case httperror.HttpError:
 			if httperror.IsServerErrorCode(e.Code()) && logErrors {
-				logger := middleware.GetRequestLogger(r)
+				logger := reqcontext.GetRequestLogger(r)
 				logger.Errorf("error-handler: %v", e)
 			}
-			if !ww.IsStatusWritten() {
-				w.WriteHeader(e.Code())
-				e.Headers().Write(w)
+			if ww, ok := w.(writer.ResponseWriter); ok {
+				if !ww.IsStatusWritten() {
+					w.WriteHeader(e.Code())
+					e.Headers().Write(w)
+				}
+				return
 			}
+			w.WriteHeader(e.Code())
+			e.Headers().Write(w)
 		case error:
-			if logErrors {
-				logger := GetRequestLogger(r)
-				logger.Errorf("error-handler: %v", err)
-			}
-			if !ww.IsStatusWritten() {
-				ww.WriteHeader(fallbackStatus)
-			}
+			statusErrorHandler(err, w, r)
 		}
 	}
 }

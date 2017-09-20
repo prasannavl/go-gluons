@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/mchain"
@@ -17,7 +18,7 @@ func CreateInitMiddleware(l *log.Logger) mchain.Middleware {
 					ww.Flush()
 				}
 			}()
-			err := next.ServeHTTP(ww, WithRequestContext(r, &RequestContext{
+			err := next.ServeHTTP(ww, reqcontext.WithContext(r, &reqcontext.RequestContext{
 				Logger: *l,
 			}))
 			return err

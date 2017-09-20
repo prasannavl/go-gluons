@@ -22,9 +22,7 @@ import (
 )
 
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
-
 	router := mroute.NewMux()
-
 	router.Use(
 		middleware.CreateInitMiddleware(c.Logger),
 		middleware.CreateLogMiddleware(log.InfoLevel),

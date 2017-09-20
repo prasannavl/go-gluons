@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prasannavl/go-gluons/ansicode"
+	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/goerror/errutils"
@@ -19,7 +20,7 @@ func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
 			ww := w.(writer.ResponseWriter)
 			startTime := time.Now()
 			err := next.ServeHTTP(w, r)
-			ctx := GetRequestContext(r)
+			ctx := reqcontext.FromRequest(r)
 			logger := &ctx.Logger
 			if err != nil {
 				LogError(logger, err)
