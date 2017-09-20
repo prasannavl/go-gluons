@@ -13,7 +13,7 @@ func init() {
 			Stream:    os.Stderr,
 			Formatter: DefaultTextFormatterForHuman,
 		},
-		filter: AllLevelsFilter,
+		filter: InfoLevelFilter,
 	}
 }
 
