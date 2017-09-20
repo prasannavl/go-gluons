@@ -19,18 +19,18 @@ func OnPrefixFunc(prefix string, f mchain.HandlerFunc, w http.ResponseWriter, r 
 	return OnPrefix(prefix, mchain.HandlerFunc(f), w, r)
 }
 
-func OnStrippedPrefix(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
+func OnPrefixStripped(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
 	if strings.HasPrefix(r.URL.Path, prefix) {
 		return true, middleware.StripPrefix(prefix, h).ServeHTTP(w, r)
 	}
 	return false, nil
 }
 
-func OnStrippedPrefixFunc(prefix string, h mchain.HandlerFunc, w http.ResponseWriter, r *http.Request) (done bool, err error) {
-	return OnStrippedPrefix(prefix, mchain.HandlerFunc(h), w, r)
+func OnPrefixStrippedFunc(prefix string, h mchain.HandlerFunc, w http.ResponseWriter, r *http.Request) (done bool, err error) {
+	return OnPrefixStripped(prefix, mchain.HandlerFunc(h), w, r)
 }
 
-func OnStrippedPrefixAndRedirectToSlash(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
+func OnPrefixStrippedAndRedirectToSlash(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
 	if strings.HasPrefix(r.URL.Path, prefix) {
 		if r.URL.Path == prefix {
 			// note: Host from the url, which often is empty, unless proxied.
@@ -49,15 +49,15 @@ func OnStrippedPrefixAndRedirectToSlash(prefix string, h mchain.Handler, w http.
 	return false, nil
 }
 
-func OnStrippedPrefixAndRedirectToSlashFunc(prefix string, f mchain.HandlerFunc, w http.ResponseWriter, r *http.Request) (done bool, err error) {
-	return OnStrippedPrefixAndRedirectToSlash(prefix, mchain.HandlerFunc(f), w, r)
+func OnPrefixStrippedAndRedirectToSlashFunc(prefix string, f mchain.HandlerFunc, w http.ResponseWriter, r *http.Request) (done bool, err error) {
+	return OnPrefixStrippedAndRedirectToSlash(prefix, mchain.HandlerFunc(f), w, r)
 }
 
 // Handlers
 
 func Mount(prefix string, h mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		_, err := OnStrippedPrefix(prefix, h, w, r)
+		_, err := OnPrefixStripped(prefix, h, w, r)
 		return err
 	}
 	return mchain.HandlerFunc(f)
@@ -66,7 +66,7 @@ func Mount(prefix string, h mchain.Handler) mchain.Handler {
 func MountAndRedirectToSlash(prefix string, h mchain.Handler) mchain.Handler {
 	prefix = strings.TrimSuffix(prefix, "/")
 	f := func(w http.ResponseWriter, r *http.Request) error {
-		_, err := OnStrippedPrefixAndRedirectToSlash(prefix, h, w, r)
+		_, err := OnPrefixStrippedAndRedirectToSlash(prefix, h, w, r)
 		return err
 	}
 	return mchain.HandlerFunc(f)
