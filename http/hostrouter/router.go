@@ -4,29 +4,38 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prasannavl/go-gluons/http/handlerutils"
+
+	"github.com/prasannavl/mchain/hconv"
+
 	"github.com/gobwas/glob"
 	"github.com/prasannavl/go-gluons/log"
+	"github.com/prasannavl/mchain"
 )
 
 type HostRouter struct {
 	Items        interface{}
 	Threshold    int
 	PatternItems []RouterGlobItem
+	NotFound     mchain.Handler
 }
 
 type RouterItem struct {
 	host    string
-	handler http.Handler
+	handler mchain.Handler
 }
 
 type RouterGlobItem struct {
 	pattern string
 	matcher glob.Glob
-	handler http.Handler
+	handler mchain.Handler
 }
 
 func New() *HostRouter {
-	return &HostRouter{Threshold: 7}
+	return &HostRouter{
+		Threshold: 7,
+		NotFound:  handlerutils.NotFoundHandler(),
+	}
 }
 
 func hostName(r *http.Request) string {
@@ -45,51 +54,59 @@ func stripPort(hostport string) string {
 	return hostport[:colon]
 }
 
-func (h *HostRouter) Build(notFoundHandler http.Handler) http.Handler {
-	if items, ok := h.Items.(map[string]http.Handler); ok {
-		hh := func(w http.ResponseWriter, r *http.Request) {
+func (h *HostRouter) Build() mchain.Handler {
+	if items, ok := h.Items.(map[string]mchain.Handler); ok {
+		hh := func(w http.ResponseWriter, r *http.Request) error {
 			hostname := hostName(r)
 			if handler, ok := items[hostname]; ok {
 				log.Trace("host-router: host: " + hostname)
-				handler.ServeHTTP(w, r)
-				return
+				return handler.ServeHTTP(w, r)
 			}
 			for _, x := range h.PatternItems {
 				if x.matcher.Match(hostname) {
 					log.Trace("host-router: match: - " + hostname + " pattern: " + x.pattern)
-					x.handler.ServeHTTP(w, r)
-					return
+					return x.handler.ServeHTTP(w, r)
 				}
 			}
-			notFoundHandler.ServeHTTP(w, r)
+			nh := h.NotFound
+			if nh != nil {
+				return nh.ServeHTTP(w, r)
+			}
+			return nil
 		}
-		return http.HandlerFunc(hh)
+		return mchain.HandlerFunc(hh)
 	}
 	items := h.Items.([]RouterItem)
-	hx := func(w http.ResponseWriter, r *http.Request) {
+	hx := func(w http.ResponseWriter, r *http.Request) error {
 		hostname := hostName(r)
 		for _, x := range items {
 			if x.host == hostname {
 				log.Trace("host-router: host: " + hostname)
-				x.handler.ServeHTTP(w, r)
-				return
+				return x.handler.ServeHTTP(w, r)
 			}
 		}
 		for _, x := range h.PatternItems {
 			if x.matcher.Match(hostname) {
 				log.Trace("host-router: match: - " + hostname + " pattern: " + x.pattern)
-				x.handler.ServeHTTP(w, r)
-				return
+				return x.handler.ServeHTTP(w, r)
 			}
 		}
-		notFoundHandler.ServeHTTP(w, r)
+		nh := h.NotFound
+		if nh != nil {
+			return nh.ServeHTTP(w, r)
+		}
+		return nil
 	}
-	return http.HandlerFunc(hx)
+	return mchain.HandlerFunc(hx)
+}
+
+func (h *HostRouter) BuildHttp(errorHandler mchain.ErrorHandler) http.Handler {
+	return hconv.ToHttp(h.Build(), errorHandler)
 }
 
 func (h *HostRouter) resolveContainer() {
 	switch item := h.Items.(type) {
-	case map[string]http.Handler:
+	case map[string]mchain.Handler:
 		if len(item) < h.Threshold+1 {
 			s := make([]RouterItem, 0, len(item)+1)
 			for k, v := range item {
@@ -99,7 +116,7 @@ func (h *HostRouter) resolveContainer() {
 		}
 	case []RouterItem:
 		if len(item)+1 > h.Threshold {
-			m := make(map[string]http.Handler, len(item)+1)
+			m := make(map[string]mchain.Handler, len(item)+1)
 			for _, x := range item {
 				m[x.host] = x.handler
 			}
@@ -110,10 +127,10 @@ func (h *HostRouter) resolveContainer() {
 	}
 }
 
-func (h *HostRouter) HandleHost(host string, handler http.Handler) {
+func (h *HostRouter) HandleHost(host string, handler mchain.Handler) {
 	h.resolveContainer()
 	switch item := h.Items.(type) {
-	case map[string]http.Handler:
+	case map[string]mchain.Handler:
 		if handler == nil {
 			delete(item, host)
 		} else {
@@ -142,7 +159,7 @@ func (h *HostRouter) HandleHost(host string, handler http.Handler) {
 	}
 }
 
-func (h *HostRouter) HandlePattern(globPattern string, handler http.Handler) {
+func (h *HostRouter) HandlePattern(globPattern string, handler mchain.Handler) {
 	hasStar := false
 	for _, x := range globPattern {
 		if x == '*' {

@@ -10,11 +10,11 @@ import (
 
 func TestReplaceArrayItem(t *testing.T) {
 	router := hostrouter.HostRouter{Threshold: 3}
-	router.Set("host1", createHandler())
-	router.Set("host2", createHandler())
-	router.Set("host2", createHandler())
+	router.HandlePattern("host1", createHandler())
+	router.HandlePattern("host2", createHandler())
+	router.HandlePattern("host2", createHandler())
 
-	items := router.Items.([]hostrouter.HostRouterItem)
+	items := router.Items.([]hostrouter.RouterItem)
 	if len(items) != 2 {
 		t.Fail()
 	}
@@ -22,19 +22,19 @@ func TestReplaceArrayItem(t *testing.T) {
 
 func TestSwitchToBackToArray(t *testing.T) {
 	router := hostrouter.HostRouter{Threshold: 3}
-	router.Set("host1", createHandler())
-	router.Set("host2", createHandler())
-	router.Set("host3", createHandler())
-	router.Set("host4", createHandler())
+	router.HandlePattern("host1", createHandler())
+	router.HandlePattern("host2", createHandler())
+	router.HandlePattern("host3", createHandler())
+	router.HandlePattern("host4", createHandler())
 
 	items := router.Items.(map[string]mchain.Handler)
 	if len(items) != 4 {
 		t.Fail()
 	}
-	router.Set("host3", nil)
-	router.Set("host4", nil)
+	router.HandlePattern("host3", nil)
+	router.HandlePattern("host4", nil)
 
-	items2 := router.Items.([]hostrouter.HostRouterItem)
+	items2 := router.Items.([]hostrouter.RouterItem)
 	if len(items2) != 2 {
 		t.Fail()
 	}
@@ -42,10 +42,10 @@ func TestSwitchToBackToArray(t *testing.T) {
 
 func TestSwitchToMap(t *testing.T) {
 	router := hostrouter.HostRouter{Threshold: 3}
-	router.Set("host1", createHandler())
-	router.Set("host2", createHandler())
-	router.Set("host3", createHandler())
-	router.Set("host4", createHandler())
+	router.HandlePattern("host1", createHandler())
+	router.HandlePattern("host2", createHandler())
+	router.HandlePattern("host3", createHandler())
+	router.HandlePattern("host4", createHandler())
 
 	items := router.Items.(map[string]mchain.Handler)
 	if len(items) != 4 {

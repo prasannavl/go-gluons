@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/prasannavl/go-gluons/http/fileserver"
-	"github.com/prasannavl/go-gluons/http/handlerutils"
 
 	"github.com/prasannavl/go-gluons/http/httpservice"
 	"github.com/prasannavl/mroute"
@@ -54,16 +53,16 @@ func createAppContext(logger *log.Logger, addr string) *AppContext {
 
 func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) http.Handler {
 	context := createAppContext(logger, addr)
-	appHandler := hconv.ToHttp(newAppHandler(context, webRoot), nil)
+	appHandler := newAppHandler(context, webRoot)
 	if len(hosts) == 0 {
-		return appHandler
+		return hconv.ToHttp(appHandler, nil)
 	}
 	r := hostrouter.New()
 	log.Infof("host filters: %v", hosts)
 	for _, h := range hosts {
 		r.HandlePattern(h, appHandler)
 	}
-	return r.Build(handlerutils.HttpNotFoundTextHandler())
+	return r.BuildHttp(nil)
 }
 
 func CreateService(opts *httpservice.HandlerServiceOpts) (httpservice.Service, error) {
