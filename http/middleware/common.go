@@ -21,17 +21,21 @@ func PanicRecoveryMiddleware(next mchain.Handler) mchain.Handler {
 func ErrorHandlerMiddleware(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) (err error) {
 		err = next.ServeHTTP(w, r)
+		ww := w.(writer.ResponseWriter)
+		if ww.IsHijacked() {
+			return err
+		}
 		if err != nil {
-			if ww, ok := w.(writer.ResponseWriter); ok {
-				if ww.IsHijacked() {
-					return err
-				}
-			}
 			switch e := err.(type) {
 			case httperror.HttpError:
-				w.WriteHeader(e.Code())
+				if !ww.IsStatusWritten() {
+					w.WriteHeader(e.Code())
+					e.Headers().Write(w)
+				}
 			case error:
-				w.WriteHeader(http.StatusInternalServerError)
+				if !ww.IsStatusWritten() {
+					ww.WriteHeader(http.StatusInternalServerError)
+				}
 			}
 		}
 		return err
