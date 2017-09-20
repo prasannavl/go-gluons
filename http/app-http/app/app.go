@@ -4,46 +4,40 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/prasannavl/go-gluons/http/fileserver"
+
 	"github.com/prasannavl/go-gluons/http/httpservice"
+	"github.com/prasannavl/mroute"
+	"github.com/prasannavl/mroute/pat"
 
 	"github.com/prasannavl/mchain/hconv"
 
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/http/chainutils"
-	"github.com/prasannavl/go-gluons/http/gosock"
 	"github.com/prasannavl/go-gluons/http/hostrouter"
 	"github.com/prasannavl/go-gluons/http/utils"
 
-	"github.com/prasannavl/go-gluons/http/fileserver"
 	"github.com/prasannavl/go-gluons/http/middleware"
 	"github.com/prasannavl/go-gluons/log"
-	"github.com/prasannavl/mchain/builder"
 )
 
 // TODO: Router
 
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
-	apiHandlers := apiHandlers(c)
-	wss := gosock.NewWebSocketServer(apiHandlers)
 
-	b := builder.Create()
+	router := mroute.NewMux()
+	dir := http.Dir(webRoot)
+	router.Handle(pat.New("/*"), fileserver.NewEx(dir, nil))
 
-	b.Add(
+	router.Use(
 		middleware.CreateInitMiddleware(c.Logger),
 		middleware.CreateLogMiddleware(log.InfoLevel),
 		middleware.ErrorHandlerMiddleware,
 		middleware.PanicRecoveryMiddleware,
 		middleware.CreateRequestIDHandler(false),
-		chainutils.OnPrefix("/api", wss),
-		chainutils.OnPrefix("/assets/gotalk.js", gosock.CreateAssetHandler("/assets/gotalk.js", "/api", false)),
 	)
 
-	notFoundFilePath := webRoot + "/error/404.html"
-
-	b.Handler(fileserver.NewEx(http.Dir(webRoot),
-		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound).ServeHTTP))
-	return b.Build()
+	return router
 }
 
 func createAppContext(logger *log.Logger, addr string) *AppContext {
@@ -74,7 +68,7 @@ func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) htt
 
 	return r.Build(hconv.ToHttp(
 		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound),
-		utils.HttpCodeOrLoggedInternalServerError))
+		utils.LoggedHttpCodeOrInternalServerError))
 }
 
 func CreateService(opts *httpservice.HandlerServiceOpts) (httpservice.Service, error) {
