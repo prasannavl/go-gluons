@@ -16,6 +16,13 @@ func HttpNotFound(w http.ResponseWriter, r *http.Request) {
 // that replies to each request with a ``404 page not found'' reply.
 func HttpNotFoundHandler() http.Handler { return http.HandlerFunc(HttpNotFound) }
 
+func HttpNotFoundText(w http.ResponseWriter, r *http.Request) {
+	HttpNotFound(w, r)
+	w.Write([]byte(http.StatusText(http.StatusNotFound)))
+}
+
+func HttpNotFoundTextHandler() http.Handler { return http.HandlerFunc(HttpNotFoundText) }
+
 func NotFoundToError(w http.ResponseWriter, r *http.Request) error {
 	return httperror.New(http.StatusNotFound, "", true)
 }
@@ -24,9 +31,20 @@ func NotFoundToErrorHandler() mchain.Handler {
 	return mchain.HandlerFunc(NotFoundToError)
 }
 
-func HttpNotFoundText(w http.ResponseWriter, r *http.Request) {
+func NotFound(w http.ResponseWriter, r *http.Request) error {
 	HttpNotFound(w, r)
-	w.Write([]byte(http.StatusText(http.StatusNotFound)))
+	return nil
 }
 
-func HttpNotFoundTextHandler() http.Handler { return http.HandlerFunc(HttpNotFoundText) }
+func NotFoundHandler() mchain.Handler {
+	return mchain.HandlerFunc(NotFound)
+}
+
+func NotFoundText(w http.ResponseWriter, r *http.Request) error {
+	HttpNotFoundText(w, r)
+	return nil
+}
+
+func NotFoundTextHandler() mchain.Handler {
+	return mchain.HandlerFunc(NotFoundText)
+}
