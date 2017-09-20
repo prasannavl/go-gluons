@@ -1,4 +1,4 @@
-package redirector
+package httpsredirector
 
 import (
 	"net"
@@ -20,7 +20,7 @@ func Create(listenAddr string, targetAddr string) httpservice.Service {
 	if err != nil {
 		panic(err)
 	}
-	log.Infof("redirector endpoint: %s", l.Addr())
+	log.Infof("https-redirector endpoint: %s", l.Addr())
 	port := strconv.Itoa(hostAddr.Port)
 	shouldIncludePort := true
 	if hostAddr.Port == 443 {
@@ -43,5 +43,5 @@ func Create(listenAddr string, targetAddr string) httpservice.Service {
 		ErrorLog:       nil,
 		MaxHeaderBytes: 1 << 12, // 4kb
 	}
-	return httpservice.New("redirector", server, l)
+	return httpservice.New("https-redirector", server, l)
 }

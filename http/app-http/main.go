@@ -11,7 +11,7 @@ import (
 
 	"github.com/prasannavl/go-gluons/http/diag"
 	"github.com/prasannavl/go-gluons/http/httpservice"
-	"github.com/prasannavl/go-gluons/http/redirector"
+	"github.com/prasannavl/go-gluons/http/httpsredirector"
 
 	"github.com/prasannavl/go-gluons/appx"
 	"github.com/prasannavl/go-gluons/http/app-http/app"
@@ -115,7 +115,7 @@ func main() {
 	}
 
 	if env.RedirectorAddr != "" {
-		s2 := redirector.Create(env.RedirectorAddr, env.Addr)
+		s2 := httpsredirector.Create(env.RedirectorAddr, env.Addr)
 		go s2.Run()
 	}
 

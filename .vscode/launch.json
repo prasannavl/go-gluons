@@ -8,7 +8,7 @@
       "mode": "debug",
       "env": {},
       "program": "${workspaceRoot}/http/app-http",
-      "args": ["-vvvh"]
+      "args": ["-vvv", "--insecure"]
     }
   ]
 }
