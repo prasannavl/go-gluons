@@ -5,7 +5,7 @@ import (
 
 	"github.com/prasannavl/mchain"
 
-	"github.com/prasannavl/go-gluons/http/utils"
+	"github.com/prasannavl/go-gluons/http/handlerutils"
 )
 
 func Hook(h mchain.Handler) mchain.Middleware {
@@ -35,7 +35,7 @@ func Run(h mchain.Handler) mchain.Middleware {
 func OnPrefix(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := utils.OnPrefix(prefix, h, w, r)
+			done, err := handlerutils.OnPrefix(prefix, h, w, r)
 			if done {
 				return err
 			}
@@ -53,7 +53,7 @@ func OnPrefixFunc(prefix string, h mchain.HandlerFunc) mchain.Middleware {
 func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := utils.OnStrippedPrefix(prefix, h, w, r)
+			done, err := handlerutils.OnStrippedPrefix(prefix, h, w, r)
 			if done {
 				return err
 			}
@@ -67,7 +67,7 @@ func Mount(prefix string, h mchain.Handler) mchain.Middleware {
 func MountRedirectToSlashed(prefix string, h mchain.Handler) mchain.Middleware {
 	hh := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
-			done, err := utils.OnStrippedPrefixAndRedirectToSlash(prefix, h, w, r)
+			done, err := handlerutils.OnStrippedPrefixAndRedirectToSlash(prefix, h, w, r)
 			if done {
 				return err
 			}

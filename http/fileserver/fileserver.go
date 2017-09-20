@@ -8,8 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prasannavl/go-gluons/http/utils"
-
+	"github.com/prasannavl/go-gluons/http/handlerutils"
 	"github.com/prasannavl/goerror"
 	"github.com/prasannavl/goerror/httperror"
 )
@@ -247,7 +246,7 @@ func newErrDirFound(pathname string, dirstat os.FileInfo) *Err {
 }
 
 func newErrRedirect(r *http.Request, location string, pathname string) *Err {
-	path := utils.UnsafeRedirectPath(r, location)
+	path := handlerutils.UnsafeRedirectPath(r, location)
 	e := newErr(http.StatusMovedPermanently, ErrRedirect, "", pathname, nil)
 	e.Headers().Set("Location", path)
 	return e

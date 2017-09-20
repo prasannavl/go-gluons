@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prasannavl/go-gluons/http/handlerutils"
 	"github.com/prasannavl/go-gluons/http/httpservice"
-	"github.com/prasannavl/go-gluons/http/utils"
 	"github.com/prasannavl/go-gluons/log"
 )
 
@@ -33,7 +33,7 @@ func Create(listenAddr string, targetAddr string) httpservice.Service {
 		}
 		finalAddr += r.RequestURI
 		w.Header().Set("connection", "close")
-		utils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
+		handlerutils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
 	}
 	server := &http.Server{
 		Handler:        http.HandlerFunc(f),

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/prasannavl/go-gluons/http/fileserver"
+	"github.com/prasannavl/go-gluons/http/handlerutils"
 
 	"github.com/prasannavl/go-gluons/http/httpservice"
 	"github.com/prasannavl/mroute"
@@ -15,9 +16,9 @@ import (
 	"github.com/prasannavl/mchain"
 
 	"github.com/prasannavl/go-gluons/http/hostrouter"
-	"github.com/prasannavl/go-gluons/http/utils"
 
 	"github.com/prasannavl/go-gluons/http/middleware"
+
 	"github.com/prasannavl/go-gluons/log"
 )
 
@@ -62,7 +63,7 @@ func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) htt
 	for _, h := range hosts {
 		r.HandlePattern(h, appHandler)
 	}
-	return r.Build(utils.HttpNotFoundTextHandler())
+	return r.Build(handlerutils.HttpNotFoundTextHandler())
 }
 
 func CreateService(opts *httpservice.HandlerServiceOpts) (httpservice.Service, error) {
