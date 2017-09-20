@@ -25,7 +25,7 @@ func Create(addr string, path string) httpservice.Service {
 func CreateWithConfigure(addr string, configFn ...func(*http.ServeMux)) httpservice.Service {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Errorf("diag-listener: %v", err)
+		panic(err)
 	}
 	log.Infof("diag endpoint: %s", l.Addr())
 	mux := http.NewServeMux()

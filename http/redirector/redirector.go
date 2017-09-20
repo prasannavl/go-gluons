@@ -18,7 +18,7 @@ func Create(listenAddr string, targetAddr string) httpservice.Service {
 	}
 	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Errorf("redirector-listener: %v", err)
+		panic(err)
 	}
 	log.Infof("redirector endpoint: %s", l.Addr())
 	port := strconv.Itoa(hostAddr.Port)
