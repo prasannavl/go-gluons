@@ -42,19 +42,25 @@ func LogLevelSwitchHandlerFunc(opts *LogSwitcherOpts) mchain.HandlerFunc {
 	}
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		flush := r.URL.Query().Get(opts.FlushParam)
-		if flush != "" {
-			log.Flush()
-		}
 		lvl := r.URL.Query().Get(opts.LevelParam)
+
 		if lvl != "" {
 			lvl = strings.ToLower(strings.TrimSpace(lvl))
 			level := log.LogLevelFromString(lvl)
 			if log.IsValidLevel(level) {
 				log.SetFilter(log.GetLogger(), log.LogFilterForLevel(level))
-				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
 				return nil
 			}
 		}
+
+		if flush != "" {
+			log.Flush()
+		}
+
+		w.Write([]byte("OK"))
+
 		return nil
 	}
 	return f
