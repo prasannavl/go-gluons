@@ -30,19 +30,24 @@ func OnPrefixStrippedFunc(prefix string, h mchain.HandlerFunc, w http.ResponseWr
 }
 
 func OnPrefixStrippedAndRedirectToSlash(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
-	if strings.HasPrefix(r.URL.Path, prefix) {
-		if r.URL.Path == prefix {
-			// note: Host from the url, which often is empty, unless proxied.
-			// This is not the Host header.
-			path := r.URL.Host + ConstructPathFromStripped(r) + "/"
-			if r.URL.RawQuery != "" {
-				path += "?" + r.URL.RawQuery
-			}
+	// Ensure that the last char of prefix is stripped of "/" before comparison
+	ln := len(prefix)
+	var px string
+	if prefix[ln] == byte('/') {
+		px = prefix[:ln-1]
+	} else {
+		px = prefix
+	}
+	if strings.HasPrefix(r.URL.Path, px) {
+		if r.URL.Path == px {
 			RedirectHandler(
-				path,
+				// Use a local redirect, since there's no way to ensure the
+				// path isn't modified arbitrarily in order to reconstruct it
+				UnsafeRedirectPath(r, "./"),
 				http.StatusMovedPermanently).ServeHTTP(w, r)
 			return true, nil
 		}
+		// Ensure that the untrimmed prefix is passed on, so that it can be roundtripped.
 		return true, StripPrefix(prefix, h).ServeHTTP(w, r)
 	}
 	return false, nil
@@ -63,7 +68,6 @@ func Mount(prefix string, h mchain.Handler) mchain.Handler {
 }
 
 func MountAndRedirectToSlash(prefix string, h mchain.Handler) mchain.Handler {
-	prefix = strings.TrimSuffix(prefix, "/")
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		_, err := OnPrefixStrippedAndRedirectToSlash(prefix, h, w, r)
 		return err

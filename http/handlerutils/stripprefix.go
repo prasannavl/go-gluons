@@ -25,16 +25,6 @@ func WithStrippedPrefixes(r *http.Request, item StrippedPrefixes) *http.Request 
 	return r.WithContext(c)
 }
 
-func ConstructPathFromStripped(r *http.Request) string {
-	prefixes := StrippedPrefixesFromRequest(r)
-	var path string
-	for _, p := range prefixes {
-		path += p
-	}
-	path += r.URL.Path
-	return path
-}
-
 func StripPrefix(prefix string, h mchain.Handler) mchain.Handler {
 	if prefix == "" {
 		return h
