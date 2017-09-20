@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
+	"github.com/prasannavl/go-gluons/templates/httpserver/app"
 	flag "github.com/spf13/pflag"
 
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"github.com/prasannavl/go-gluons/http/httpsredirector"
 
 	"github.com/prasannavl/go-gluons/appx"
-	"github.com/prasannavl/go-gluons/http/app-http/app"
 	"github.com/prasannavl/go-gluons/log"
 	"github.com/prasannavl/go-gluons/logconfig"
 )

@@ -17,6 +17,6 @@ logs/
 .glide/
 debug
 
-# apps
-app-http
-app-http.tar.gz
+# app
+httpserver
+httpserver.tar.gz
