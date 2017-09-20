@@ -24,6 +24,7 @@ type Options struct {
 	MaxAge          int // days
 	CompressBackups bool
 	Humanize        int
+	EnableColor     bool
 	StdLogLevel     log.Level
 }
 
@@ -40,6 +41,7 @@ func DefaultOptions() Options {
 		MaxAge:           28,
 		CompressBackups:  true,
 		Humanize:         Humanize.Auto,
+		EnableColor:      true,
 		StdLogLevel:      log.TraceLevel,
 	}
 }
@@ -60,7 +62,11 @@ func Init(opts *Options, result *LogInitResult) {
 	humanize := getHumanizeValue(opts)
 
 	if humanize == Humanize.True {
-		formatter = log.DefaultColorTextFormatterForHuman
+		if opts.EnableColor {
+			formatter = log.DefaultColorTextFormatterForHuman
+		} else {
+			formatter = log.DefaultTextFormatterForHuman
+		}
 	} else {
 		formatter = log.DefaultTextFormatter
 	}
