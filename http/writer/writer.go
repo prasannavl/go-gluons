@@ -38,6 +38,7 @@ type ResponseWriter interface {
 	Flush()
 	IsHijacked() bool
 	IsStatusWritten() bool
+	IsStatusSet() bool
 	WriteStatus(int)
 }
 
@@ -86,6 +87,10 @@ func (b *BasicWriter) IsStatusWritten() bool {
 	return b.isStatusWritten
 }
 
+func (b *BasicWriter) IsStatusSet() bool {
+	return b.isStatusSet
+}
+
 func (b *BasicWriter) Write(buf []byte) (int, error) {
 	b.EnsureStatusWritten()
 	n, err := b.inner.Write(buf)
@@ -101,9 +106,9 @@ func (b *BasicWriter) Write(buf []byte) (int, error) {
 }
 
 func (b *BasicWriter) Status() int {
-	// if b.code == 0 {
-	// 	return 200
-	// }
+	if b.code == 0 {
+		return 200
+	}
 	return b.code
 }
 
