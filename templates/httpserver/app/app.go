@@ -18,11 +18,11 @@ import (
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 	router := mroute.NewMux()
 	router.Use(
-		middleware.CreateInitMiddleware(c.Logger),
-		middleware.CreateLogMiddleware(log.InfoLevel),
+		middleware.InitMiddleware(c.Logger),
+		middleware.LoggerMiddleware(log.InfoLevel),
 		middleware.ErrorHandlerMiddleware,
 		middleware.PanicRecoveryMiddleware,
-		middleware.CreateRequestIDHandler(false),
+		middleware.RequestIDMiddleware(false),
 	)
 
 	dir := http.Dir(webRoot)

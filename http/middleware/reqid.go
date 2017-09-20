@@ -13,14 +13,14 @@ import (
 
 const RequestIDHeaderKey = "X-Request-Id"
 
-func CreateRequestIDHandler(reuseUpstreamID bool) mchain.Middleware {
+func RequestIDMiddleware(reuseUpstreamID bool) mchain.Middleware {
 	if reuseUpstreamID {
-		return RequestIDInitOrReuseHandler
+		return requestIDInitOrReuseMiddleware
 	}
-	return RequestIDInitOrFailHandler
+	return requestIDInitOrFailMiddleware
 }
 
-func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
+func requestIDInitOrFailMiddleware(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		err := requestIDInitOrFailHandler(r, reqcontext.FromRequest(r))
 		if err != nil {
@@ -31,7 +31,7 @@ func RequestIDInitOrFailHandler(next mchain.Handler) mchain.Handler {
 	return mchain.HandlerFunc(f)
 }
 
-func RequestIDInitOrReuseHandler(next mchain.Handler) mchain.Handler {
+func requestIDInitOrReuseMiddleware(next mchain.Handler) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		err := requestIDInitOrReuseHandler(r, reqcontext.FromRequest(r))
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/prasannavl/mchain"
 )
 
-func CreateInitMiddleware(l *log.Logger) mchain.Middleware {
+func InitMiddleware(l *log.Logger) mchain.Middleware {
 	m := func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
 			ww := writer.NewResponseWriter(w, r.ProtoMajor)

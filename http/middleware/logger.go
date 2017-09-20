@@ -14,7 +14,7 @@ import (
 	"github.com/prasannavl/mchain"
 )
 
-func CreateLogMiddleware(requestLogLevel log.Level) mchain.Middleware {
+func LoggerMiddleware(requestLogLevel log.Level) mchain.Middleware {
 	return func(next mchain.Handler) mchain.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) error {
 			ww := w.(writer.ResponseWriter)
