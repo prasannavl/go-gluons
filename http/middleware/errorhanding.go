@@ -10,7 +10,7 @@ import (
 )
 
 func ErrorHandlerMiddleware(next mchain.Handler) mchain.Handler {
-	handler := handlerutils.StatusErrorHandler(http.StatusInternalServerError, false)
+	handler := handlerutils.HttpErrorHandler(http.StatusInternalServerError, false)
 	f := func(w http.ResponseWriter, r *http.Request) (err error) {
 		err = next.ServeHTTP(w, r)
 		ww := w.(writer.ResponseWriter)
