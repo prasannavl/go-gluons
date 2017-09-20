@@ -24,14 +24,14 @@ func (f *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return ServeRequestPath(w, r, f.root)
 }
 
-func NewEx(root http.FileSystem, notFoundHandler mchain.HandlerFunc) mchain.Handler {
+func NewEx(root http.FileSystem, notFoundHandler mchain.Handler) mchain.Handler {
 	return &FileServerEx{FileServer{root}, true, notFoundHandler}
 }
 
 type FileServerEx struct {
 	FileServer
 	RedirectsEnabled bool
-	NotFoundHandler  mchain.HandlerFunc
+	NotFoundHandler  mchain.Handler
 }
 
 func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
@@ -54,7 +54,7 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		case ErrFsOpen:
 			l.Warnf("fileserver: %v %v", e.Kind, e)
 			if f.NotFoundHandler != nil {
-				return f.NotFoundHandler(w, r)
+				return f.NotFoundHandler.ServeHTTP(w, r)
 			}
 		default:
 			l.Warnf("fileserver: %v %v", e.Kind, e)
