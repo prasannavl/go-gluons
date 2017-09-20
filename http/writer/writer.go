@@ -37,14 +37,16 @@ type ResponseWriter interface {
 	Unwrap() http.ResponseWriter
 	Flush()
 	IsHijacked() bool
+	IsStatusWritten() bool
+	WriteStatus(int)
 }
 
 // basicWriter wraps a http.ResponseWriter that implements the minimal
 // http.ResponseWriter interface.
 type BasicWriter struct {
 	inner           http.ResponseWriter
-	isHeaderSet     bool
-	isHeaderFlushed bool
+	isStatusSet     bool
+	isStatusWritten bool
 	code            int
 	bytes           int
 	tee             io.Writer
@@ -57,28 +59,35 @@ func (b *BasicWriter) Header() http.Header {
 func (b *BasicWriter) WriteHeader(code int) {
 	b.code = code
 	if code != 0 {
-		b.isHeaderSet = true
+		b.isStatusSet = true
 	} else {
-		b.isHeaderSet = false
+		b.isStatusSet = false
 	}
 }
 
-func (b *BasicWriter) WriteHeaderImmediate(code int) {
+func (b *BasicWriter) WriteStatus(code int) {
+	if b.isStatusWritten {
+		panic("mutiple status write attempted")
+	}
 	b.WriteHeader(code)
-	if b.isHeaderSet {
+	if b.isStatusSet {
 		b.inner.WriteHeader(code)
-		b.isHeaderFlushed = true
+		b.isStatusWritten = true
 	}
 }
 
-func (b *BasicWriter) FlushHeadersIfRequired() {
-	if !b.isHeaderFlushed {
-		b.WriteHeaderImmediate(b.code)
+func (b *BasicWriter) EnsureStatusWritten() {
+	if !b.isStatusWritten {
+		b.WriteStatus(b.code)
 	}
+}
+
+func (b *BasicWriter) IsStatusWritten() bool {
+	return b.isStatusWritten
 }
 
 func (b *BasicWriter) Write(buf []byte) (int, error) {
-	b.FlushHeadersIfRequired()
+	b.EnsureStatusWritten()
 	n, err := b.inner.Write(buf)
 	if b.tee != nil {
 		_, err2 := b.tee.Write(buf)
@@ -116,7 +125,7 @@ func (b *BasicWriter) CloseNotify() <-chan bool {
 }
 
 func (b *BasicWriter) Flush() {
-	b.FlushHeadersIfRequired()
+	b.EnsureStatusWritten()
 	fl := b.inner.(http.Flusher)
 	fl.Flush()
 }
@@ -147,7 +156,7 @@ func (f *HttpOneWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func (f *HttpOneWriter) ReadFrom(r io.Reader) (int64, error) {
-	f.BasicWriter.FlushHeadersIfRequired()
+	f.BasicWriter.EnsureStatusWritten()
 	if f.BasicWriter.tee != nil {
 		return io.Copy(&f.BasicWriter, r)
 	}
