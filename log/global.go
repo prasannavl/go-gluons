@@ -3,7 +3,8 @@ package log
 import "os"
 
 var (
-	g *Logger
+	NopLogger = newNopLogger()
+	g         *Logger
 )
 
 func init() {
@@ -15,12 +16,22 @@ func init() {
 	}
 }
 
+func newNopLogger() *Logger {
+	l := New(NopSink{})
+	SetFlags(l, 0)
+	return l
+}
+
 func New(sink Sink) *Logger {
 	return &Logger{sink, AllLevelsFilter, nil, FlagTime}
 }
 
 func SetLogger(l *Logger) {
-	g = l
+	if l == nil {
+		g = NopLogger
+	} else {
+		g = l
+	}
 }
 
 func GetLogger() *Logger {
