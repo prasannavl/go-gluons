@@ -23,7 +23,7 @@ type Options struct {
 	MaxBackups      int
 	MaxAge          int // days
 	CompressBackups bool
-	Humanize        int
+	Humanize        bool
 	EnableColor     bool
 	StdLogLevel     log.Level
 }
@@ -40,7 +40,7 @@ func DefaultOptions() Options {
 		MaxBackups:       2,
 		MaxAge:           28,
 		CompressBackups:  true,
-		Humanize:         Humanize.Auto,
+		Humanize:         true,
 		EnableColor:      true,
 		StdLogLevel:      log.TraceLevel,
 	}
@@ -59,9 +59,7 @@ func Init(opts *Options, result *LogInitResult) {
 	s, name := mustCreateWriteStream(opts)
 	var formatter func(r *log.Record) string
 
-	humanize := getHumanizeValue(opts)
-
-	if humanize == Humanize.True {
+	if opts.Humanize {
 		if opts.EnableColor {
 			formatter = log.DefaultColorTextFormatterForHuman
 		} else {
@@ -121,16 +119,6 @@ func LogLevelFromVerbosityLevel(vLevel int) log.Level {
 		return log.TraceLevel
 	}
 	return log.TraceLevel
-}
-
-func getHumanizeValue(opts *Options) int {
-	if opts.Humanize == Humanize.Auto {
-		if opts.LogFile == CommonTargets.TargetStdErr || opts.LogFile == CommonTargets.TargetStdOut {
-			return Humanize.True
-		}
-		return Humanize.False
-	}
-	return opts.Humanize
 }
 
 func mustCreateWriteStream(opts *Options) (w io.Writer, filename string) {
@@ -234,12 +222,6 @@ func touchFile(path string) error {
 // Enums
 
 type (
-	humanizeEnum struct {
-		Auto  int
-		False int
-		True  int
-	}
-
 	commonTargetEnum struct {
 		TargetStdOut string
 		TargetStdErr string
@@ -256,12 +238,6 @@ type (
 )
 
 var (
-	Humanize = humanizeEnum{
-		Auto:  -1,
-		False: 0,
-		True:  1,
-	}
-
 	CommonTargets = commonTargetEnum{
 		TargetStdOut: ":stdout",
 		TargetStdErr: ":stderr",

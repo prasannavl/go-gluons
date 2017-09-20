@@ -26,7 +26,7 @@ type EnvFlags struct {
 	Verbosity      int
 	DisplayVersion bool
 	DiagAddr       string
-	LogHumanize    int
+	LogHumanize    bool
 	LogEnableColor bool
 	Insecure       bool
 	RedirectorAddr string
@@ -44,7 +44,7 @@ func initFlags(env *EnvFlags) {
 	flag.StringVar(&env.DiagAddr, "dapi-address", "localhost:9090", "the 'host:port' for diagnostics api")
 	flag.StringVar(&env.LogFile, "log", "", "the log file destination")
 	flag.BoolVar(&env.LogDisabled, "no-log", false, "disable the logger")
-	flag.IntVarP(&env.LogHumanize, "log-humanize", "h", -1, "log humanize mode: -1 (auto), 0 (false), 1 (true)")
+	flag.BoolVarP(&env.LogHumanize, "log-humanize", "h", false, "humanize log messages")
 	flag.BoolVar(&env.LogEnableColor, "log-color", true, "enable colored log messages")
 	flag.BoolVar(&env.Insecure, "insecure", false, "disable tls")
 	flag.BoolVar(&env.UseSelfSigned, "self-signed", false, "use randomly generated self signed certificate for tls")
