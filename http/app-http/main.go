@@ -93,7 +93,7 @@ func main() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorv(err)
-			debug.PrintStack()
+			log.Error(string(debug.Stack()))
 		}
 	}()
 
