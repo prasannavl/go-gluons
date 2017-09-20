@@ -21,13 +21,9 @@ import (
 	"github.com/prasannavl/go-gluons/log"
 )
 
-// TODO: Router
-
 func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 
 	router := mroute.NewMux()
-	dir := http.Dir(webRoot)
-	router.Handle(pat.New("/*"), fileserver.NewEx(dir, nil))
 
 	router.Use(
 		middleware.CreateInitMiddleware(c.Logger),
@@ -36,6 +32,9 @@ func newAppHandler(c *AppContext, webRoot string) mchain.Handler {
 		middleware.PanicRecoveryMiddleware,
 		middleware.CreateRequestIDHandler(false),
 	)
+
+	dir := http.Dir(webRoot)
+	router.Handle(pat.New("/*"), fileserver.NewEx(dir, nil))
 
 	return router
 }
@@ -63,12 +62,7 @@ func NewApp(logger *log.Logger, addr string, webRoot string, hosts []string) htt
 	for _, h := range hosts {
 		r.HandlePattern(h, appHandler)
 	}
-
-	notFoundFilePath := webRoot + "/error/404.html"
-
-	return r.Build(hconv.ToHttp(
-		utils.CreateFileHandler(notFoundFilePath, http.StatusNotFound),
-		utils.LoggedHttpCodeOrInternalServerError))
+	return r.Build(utils.HttpNotFoundTextHandler())
 }
 
 func CreateService(opts *httpservice.HandlerServiceOpts) (httpservice.Service, error) {

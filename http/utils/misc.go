@@ -8,7 +8,7 @@ import (
 	"github.com/prasannavl/mchain"
 )
 
-func CreateFileHandler(filePath string, status int) mchain.Handler {
+func FileHandler(filePath string, status int) mchain.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) error {
 		f, err := os.Open(filePath)
 		if err != nil {
