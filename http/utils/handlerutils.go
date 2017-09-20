@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prasannavl/go-gluons/http/middleware"
 	"github.com/prasannavl/mchain"
 )
 
@@ -21,7 +20,7 @@ func OnPrefixFunc(prefix string, f mchain.HandlerFunc, w http.ResponseWriter, r 
 
 func OnPrefixStripped(prefix string, h mchain.Handler, w http.ResponseWriter, r *http.Request) (done bool, err error) {
 	if strings.HasPrefix(r.URL.Path, prefix) {
-		return true, middleware.StripPrefix(prefix, h).ServeHTTP(w, r)
+		return true, StripPrefix(prefix, h).ServeHTTP(w, r)
 	}
 	return false, nil
 }
@@ -35,7 +34,7 @@ func OnPrefixStrippedAndRedirectToSlash(prefix string, h mchain.Handler, w http.
 		if r.URL.Path == prefix {
 			// note: Host from the url, which often is empty, unless proxied.
 			// This is not the Host header.
-			path := r.URL.Host + middleware.ConstructPathFromStripped(r) + "/"
+			path := r.URL.Host + ConstructPathFromStripped(r) + "/"
 			if r.URL.RawQuery != "" {
 				path += "?" + r.URL.RawQuery
 			}
@@ -44,7 +43,7 @@ func OnPrefixStrippedAndRedirectToSlash(prefix string, h mchain.Handler, w http.
 				http.StatusMovedPermanently).ServeHTTP(w, r)
 			return true, nil
 		}
-		return true, middleware.StripPrefix(prefix, h).ServeHTTP(w, r)
+		return true, StripPrefix(prefix, h).ServeHTTP(w, r)
 	}
 	return false, nil
 }
