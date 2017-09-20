@@ -38,4 +38,3 @@ func GetRequestLogger(r *http.Request) *log.Logger {
 	}
 	return log.GetLogger()
 }
-

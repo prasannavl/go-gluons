@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/prasannavl/go-gluons/log"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type Options struct {

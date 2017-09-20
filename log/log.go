@@ -20,8 +20,8 @@ const (
 type loggerFlags int
 
 const (
-	_        loggerFlags = 0
-	FlagTime             = 1 << (iota - 1)
+	_           loggerFlags = 0
+	FlagTime                = 1 << (iota - 1)
 	FlagSrcHint
 )
 

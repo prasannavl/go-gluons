@@ -155,7 +155,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 type condResult int
 
 const (
-	condNone condResult = iota
+	condNone  condResult = iota
 	condTrue
 	condFalse
 )
