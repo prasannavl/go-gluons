@@ -241,7 +241,7 @@ func newErr(statusHint int, kind fileServerErrorKind, message string, pathname s
 }
 
 func newErrDirFound(pathname string, dirstat os.FileInfo) *Err {
-	e := newErr(http.StatusForbidden, ErrDirFound, "", pathname, nil)
+	e := newErr(http.StatusForbidden, ErrDirFound, "dir found", pathname, nil)
 	e.Dirstat = dirstat
 	return e
 }
