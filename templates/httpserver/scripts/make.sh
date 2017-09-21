@@ -67,7 +67,7 @@ pack() {
         run
     fi
     echo "> pack: start"    
-    tar -zvcf "$BUILD_PACKAGE" "$BUILD_TARGET" "$ASSETS_DIR" "$RUN_SCRIPT"
+    tar -zvcf "$BUILD_PACKAGE" "$BUILD_TARGET" "$RUN_SCRIPT" # "$ASSETS_DIR" 
     echo "> pack: done"
 }
 
