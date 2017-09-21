@@ -29,7 +29,7 @@ setup_vars() {
     LOGS_DIR="./logs"
     # Pointing to a web root, that could be anywhere.
     # This dir is not touched by the deployment.
-    WEBROOT_DIR="./assets"
+    WEBROOT_DIR="./www"
     CERT_CACHE_DIR="./cert-cache"
 }
 
