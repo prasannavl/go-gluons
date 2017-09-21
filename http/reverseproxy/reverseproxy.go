@@ -23,7 +23,7 @@ func NewHostProxy(host string, forceHttp bool) *httputil.ReverseProxy {
 		if forceHttp {
 			req.URL.Scheme = "http"
 		}
-		req.URL.Host = req.Host
+		req.URL.Host = host
 		clearUserAgentIfNotValid(req)
 	}
 	return &httputil.ReverseProxy{Director: director}
