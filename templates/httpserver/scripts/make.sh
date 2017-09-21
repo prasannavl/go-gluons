@@ -28,6 +28,7 @@ init() {
 setup_vars() {
     PKG_BASE_NAME="$(basename $(pwd))"
     BUILD_TARGET="${BUILD_TARGET:-${PKG_BASE_NAME}}"
+    # This is simply copied to the dest
     ASSETS_DIR="./assets"
     
     BUILD_PACKAGE="${BUILD_TARGET}.tar.gz"

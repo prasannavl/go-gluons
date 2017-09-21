@@ -27,20 +27,22 @@ setup_vars() {
     PKG_BASE_NAME="$(basename $(pwd))"
     BIN_NAME="${BIN_NAME:-${PKG_BASE_NAME}}"
     LOGS_DIR="./logs"
-    ASSETS_DIR="./assets"
-    CERT_DIR_CACHE="./cert-cache"
+    # Pointing to a web root, that could be anywhere.
+    # This dir is not touched by the deployment.
+    WEBROOT_DIR="./assets"
+    CERT_CACHE_DIR="./cert-cache"
 }
 
 start() {
     stop
     echo "> run: start"
-    mkdir -p "$LOGS_DIR" "$CERT_DIR_CACHE"
+    mkdir -p "$LOGS_DIR" "$CERT_CACHE_DIR"
     local binary_path="./${BIN_NAME}"
     sudo setcap cap_net_bind_service=+ep "$binary_path"
     local log_file_exec="${LOGS_DIR}/${PKG_BASE_NAME}-exec.log"
     local log_file="${LOGS_DIR}/${PKG_BASE_NAME}.log"  
 
-    local cmd=$(echo "$binary_path" --address=":443" --root="${ASSETS_DIR}" --redirector=":80" --dapi-address="localhost:7000" --cert-dir="${CERT_DIR_CACHE}" --log="${log_file}")
+    local cmd=$(echo "$binary_path" --address=":443" --root="${WEBROOT_DIR}" --redirector=":80" --dapi-address="localhost:7000" --cert-dir="${CERT_CACHE_DIR}" --log="${log_file}")
 
     echo "cmd: " $cmd
     nohup $cmd &>> "${log_file_exec}" &
