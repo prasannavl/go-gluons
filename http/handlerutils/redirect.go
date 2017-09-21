@@ -25,7 +25,7 @@ func (rh *redirectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	Redirect(w, r, rh.url, rh.code)
 }
 
-// RedirectHandler returns a request handler that redirects
+// HttpRedirectHandler returns a request handler that redirects
 // each request it receives to the given url using the given
 // status code.
 //
@@ -124,17 +124,35 @@ func hexEscapeNonASCII(s string) string {
 
 // UnsafeRedirect  does not convert relative paths to absolute paths, or clean paths
 // like Redirect does.
-func UnsafeRedirect(w http.ResponseWriter, r *http.Request, newPath string, redirectStatus int) {
-	w.Header().Set("Location", PathWithOptionalURLQuery(newPath, r.URL.RawQuery))
-	w.WriteHeader(redirectStatus)
+func UnsafeRedirect(w http.ResponseWriter, r *http.Request, location string, code int) {
+	w.Header().Set("Location", PathWithOptionalURLQuery(location, r.URL.RawQuery))
+	w.WriteHeader(code)
 }
 
-func PathWithOptionalURLQuery(newPath string, rawQuery string) string {
-	if strings.ContainsRune(newPath, '?') {
-		return  newPath
+// Redirect to a fixed URL
+type unsafeRedirectHandler struct {
+	location  string
+	code int
+}
+
+func (rh *unsafeRedirectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	UnsafeRedirect(w, r, rh.location, rh.code)
+}
+
+func HttpUnsafeRedirectHandler(location string, code int) http.Handler {
+	return &unsafeRedirectHandler{location, code}
+}
+
+func UnsafeRedirectHandler(location string, code int) mchain.Handler {
+	return hconv.FromHttp(&unsafeRedirectHandler{location, code}, false)
+}
+
+func PathWithOptionalURLQuery(path string, rawQuery string) string {
+	if strings.ContainsRune(path, '?') {
+		return  path
 	}
 	if rawQuery != "" {
-		newPath += "?" + rawQuery
+		path += "?" + rawQuery
 	}
-	return newPath
+	return path
 }
