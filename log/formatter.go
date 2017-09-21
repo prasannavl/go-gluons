@@ -16,10 +16,38 @@ type ColorStringer interface {
 func DefaultTextFormatter(r *Record) string {
 	var buf bytes.Buffer
 	f := GetFlags(r.Meta.Logger)
+	const sep = "\t"
 	if f&FlagTime == FlagTime {
-		buf.WriteString(r.Meta.Time.Format(time.RFC3339) + ",")
+		buf.WriteString(r.Meta.Time.Format(time.RFC3339) + sep)
 	}
-	buf.WriteString(LogLevelString(r.Meta.Level) + ",")
+	buf.WriteString(LogLevelString(r.Meta.Level) + sep)
+	args := r.Args
+	if r.Format == "" {
+		buf.WriteString(fmt.Sprint(args...))
+	} else if len(args) > 0 {
+		buf.WriteString(fmt.Sprintf(r.Format, args...))
+	} else {
+		buf.WriteString(r.Format)
+	}
+	fields := GetFields(r.Meta.Logger)
+	for _, x := range fields {
+		buf.WriteString(sep + x.Name + "=" + fmt.Sprint(x.Value))
+	}
+	if f&FlagSrcHint == FlagSrcHint {
+		buf.WriteString(sep + r.Meta.File + sep + strconv.Itoa(r.Meta.Line))
+	}
+	buf.WriteString("\r\n")
+	return buf.String()
+}
+
+func CsvTextFormatter(r *Record) string {
+	var buf bytes.Buffer
+	f := GetFlags(r.Meta.Logger)
+	const sep = ","
+	if f&FlagTime == FlagTime {
+		buf.WriteString(r.Meta.Time.Format(time.RFC3339) + sep)
+	}
+	buf.WriteString(LogLevelString(r.Meta.Level) + sep)
 	args := r.Args
 	if r.Format == "" {
 		buf.WriteString(strconv.Quote(fmt.Sprint(args...)))
@@ -30,10 +58,10 @@ func DefaultTextFormatter(r *Record) string {
 	}
 	fields := GetFields(r.Meta.Logger)
 	for _, x := range fields {
-		buf.WriteString("," + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
+		buf.WriteString(sep + strconv.Quote(x.Name) + "=" + strconv.Quote(fmt.Sprint(x.Value)))
 	}
 	if f&FlagSrcHint == FlagSrcHint {
-		buf.WriteString("," + strconv.Quote(r.Meta.File) + "," + strconv.Itoa(r.Meta.Line))
+		buf.WriteString(sep + strconv.Quote(r.Meta.File) + sep + strconv.Itoa(r.Meta.Line))
 	}
 	buf.WriteString("\r\n")
 	return buf.String()
@@ -48,9 +76,9 @@ func DefaultTextFormatterForHuman(r *Record) string {
 		var timeFormat string
 		t := r.Meta.Time
 		if t.Sub(initTime).Hours() > 24 {
-			timeFormat = "03:04:05 (Jan 02)"
+			timeFormat = "15:04:05 (Jan 02)"
 		} else {
-			timeFormat = "03:04:05"
+			timeFormat = "15:04:05"
 		}
 		buf.WriteString(t.Format(timeFormat) + " ")
 	}
@@ -80,9 +108,9 @@ func DefaultColorTextFormatterForHuman(r *Record) string {
 		var timeFormat string
 		t := r.Meta.Time
 		if t.Sub(initTime).Hours() > 24 {
-			timeFormat = "03:04:05 (Jan 02)"
+			timeFormat = "15:04:05 (Jan 02)"
 		} else {
-			timeFormat = "03:04:05"
+			timeFormat = "15:04:05"
 		}
 		buf.WriteString(ansicode.BlackBright + t.Format(timeFormat) + ansicode.Reset + "  ")
 	}
