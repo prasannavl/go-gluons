@@ -18,6 +18,7 @@ type HostRouter struct {
 	Threshold    int
 	PatternItems []RouterGlobItem
 	NotFound     mchain.Handler
+	HostFunc     func(*http.Request) string
 }
 
 type RouterItem struct {
@@ -35,10 +36,11 @@ func New() *HostRouter {
 	return &HostRouter{
 		Threshold: 7,
 		NotFound:  handlerutils.NotFoundHandler(),
+		HostFunc:  LowerCasedHostFromHeader,
 	}
 }
 
-func hostName(r *http.Request) string {
+func LowerCasedHostFromHeader(r *http.Request) string {
 	hostname := stripPort(r.Host)
 	return strings.ToLower(hostname)
 }
@@ -54,10 +56,20 @@ func stripPort(hostport string) string {
 	return hostport[:colon]
 }
 
+func (h *HostRouter) checkVariants() {
+	if h.HostFunc == nil {
+		panic("HostFunc cannot be nil")
+	}
+	if h.NotFound == nil {
+		panic("NotFound handler cannot be nil. Note: NopHandler can be used if that's the desired behavior")
+	}
+}
+
 func (h *HostRouter) Build() mchain.Handler {
+	h.checkVariants()
 	if items, ok := h.Items.(map[string]mchain.Handler); ok {
 		hh := func(w http.ResponseWriter, r *http.Request) error {
-			hostname := hostName(r)
+			hostname := h.HostFunc(r)
 			if handler, ok := items[hostname]; ok {
 				log.Trace("host-router: host: " + hostname)
 				return handler.ServeHTTP(w, r)
@@ -68,17 +80,13 @@ func (h *HostRouter) Build() mchain.Handler {
 					return x.handler.ServeHTTP(w, r)
 				}
 			}
-			nh := h.NotFound
-			if nh != nil {
-				return nh.ServeHTTP(w, r)
-			}
-			return nil
+			return h.NotFound.ServeHTTP(w, r)
 		}
 		return mchain.HandlerFunc(hh)
 	}
 	items := h.Items.([]RouterItem)
 	hx := func(w http.ResponseWriter, r *http.Request) error {
-		hostname := hostName(r)
+		hostname := h.HostFunc(r)
 		for _, x := range items {
 			if x.host == hostname {
 				log.Trace("host-router: host: " + hostname)
@@ -91,11 +99,7 @@ func (h *HostRouter) Build() mchain.Handler {
 				return x.handler.ServeHTTP(w, r)
 			}
 		}
-		nh := h.NotFound
-		if nh != nil {
-			return nh.ServeHTTP(w, r)
-		}
-		return nil
+		return h.NotFound.ServeHTTP(w, r)
 	}
 	return mchain.HandlerFunc(hx)
 }
