@@ -17,7 +17,7 @@ func CreateShutdownHandler(handler func(), s ...os.Signal) {
 	go func() {
 		for sig := range quit {
 			log.Infof("signal: %v", sig)
-			log.Info("shutting down..")
+			log.Info("shutting down")
 			if handler != nil {
 				handler()
 			}
