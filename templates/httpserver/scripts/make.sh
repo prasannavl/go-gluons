@@ -94,6 +94,11 @@ deploy() {
     echo "> deploy: end"
 }
 
+cleandeploy() {
+    run
+    deploy
+}
+
 if [ -z "$@" ]; then
     run
 else 
