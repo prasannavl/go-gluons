@@ -72,31 +72,32 @@ pack() {
 
 deploy() {
     init
-    if [ ! -f "$BUILD_PACKAGE" ]; then
-        pack
-    fi
-    echo "> deploy: start"
+    run
+    pack
+    deploy-package "$BUILD_PACKAGE"
+}
 
+deploy-package() {
+    echo "> deploy: start"
+    local package="$1"
+    if [ ! -f "$package" ]; then
+        echo "package not found: \"$package\""
+        return
+    fi
     local pre_script="
     mkdir -p \"${DEPLOY_TARBALL_DIR}\" \"${DEPLOY_DIR}\"
     "
-    
     local post_script="
     rm -rf \"${DEPLOY_DIR}/{${BUILD_TARGET},${ASSETS_DIR}}\" &&
-    tar -xvzf \"${DEPLOY_TARBALL_DIR}/${BUILD_PACKAGE}\" -C \"${DEPLOY_DIR}\" &&
+    tar -xvzf \"${DEPLOY_TARBALL_DIR}/${package}\" -C \"${DEPLOY_DIR}\" &&
     chmod +x \"${DEPLOY_DIR}/${RUN_SCRIPT}\" &&
     \"${DEPLOY_DIR}/${RUN_SCRIPT}\"
     "
 
-    ssh $DEPLOY_SERVER "${pre_script}"
-    rsync -avu "$BUILD_PACKAGE" $DEPLOY_SERVER:"$DEPLOY_TARBALL_DIR" --progress    
-    ssh $DEPLOY_SERVER "${post_script}"
+    ssh "$DEPLOY_SERVER" "${pre_script}"
+    rsync -avu "$package" "$DEPLOY_SERVER":"$DEPLOY_TARBALL_DIR" --progress    
+    ssh "$DEPLOY_SERVER" "${post_script}"
     echo "> deploy: end"
-}
-
-cleandeploy() {
-    run
-    deploy
 }
 
 if [ -z "$@" ]; then
