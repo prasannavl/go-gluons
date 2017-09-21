@@ -9,7 +9,8 @@ import (
 )
 
 func TestReplaceArrayItem(t *testing.T) {
-	router := hostrouter.HostRouter{Threshold: 3}
+	router := hostrouter.New()
+	router.Threshold = 3
 	router.HandlePattern("host1", createHandler())
 	router.HandlePattern("host2", createHandler())
 	router.HandlePattern("host2", createHandler())
@@ -21,7 +22,8 @@ func TestReplaceArrayItem(t *testing.T) {
 }
 
 func TestSwitchToBackToArray(t *testing.T) {
-	router := hostrouter.HostRouter{Threshold: 3}
+	router := hostrouter.New()
+	router.Threshold = 3
 	router.HandlePattern("host1", createHandler())
 	router.HandlePattern("host2", createHandler())
 	router.HandlePattern("host3", createHandler())
@@ -41,7 +43,8 @@ func TestSwitchToBackToArray(t *testing.T) {
 }
 
 func TestSwitchToMap(t *testing.T) {
-	router := hostrouter.HostRouter{Threshold: 3}
+	router := hostrouter.New()
+	router.Threshold = 3
 	router.HandlePattern("host1", createHandler())
 	router.HandlePattern("host2", createHandler())
 	router.HandlePattern("host3", createHandler())
