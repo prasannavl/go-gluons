@@ -52,12 +52,12 @@ func (f *FileServerEx) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 				return nil
 			}
 		case ErrFsOpen:
-			l.Warnf("fileserver: %v %v", e.Kind, e)
+			l.Warnf("fileserver: kind: %d, %v", e.Kind, e)
 			if f.NotFoundHandler != nil {
 				return f.NotFoundHandler.ServeHTTP(w, r)
 			}
 		default:
-			l.Warnf("fileserver: %v %v", e.Kind, e)
+			l.Warnf("fileserver: kind: %d, %v", e.Kind, e)
 		}
 	}
 	return err
