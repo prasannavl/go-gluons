@@ -246,7 +246,7 @@ func newErrDirFound(pathname string, dirstat os.FileInfo) *Err {
 }
 
 func newErrRedirect(r *http.Request, location string, pathname string) *Err {
-	path := handlerutils.UnsafeRedirectPath(r, location)
+	path := handlerutils.PathWithOptionalURLQuery(location, r.URL.RawQuery)
 	e := newErr(http.StatusMovedPermanently, ErrRedirect, "", pathname, nil)
 	e.Headers().Set("Location", path)
 	return e

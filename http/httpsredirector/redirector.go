@@ -33,7 +33,7 @@ func Create(listenAddr string, targetAddr string) httpservice.Service {
 		}
 		finalAddr += r.RequestURI
 		w.Header().Set("connection", "close")
-		handlerutils.Redirect(w, r, finalAddr, http.StatusPermanentRedirect)
+		handlerutils.UnsafeRedirect(w, r, finalAddr, http.StatusPermanentRedirect)
 	}
 	server := &http.Server{
 		Handler:        http.HandlerFunc(f),

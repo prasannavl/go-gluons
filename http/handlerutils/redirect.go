@@ -125,13 +125,16 @@ func hexEscapeNonASCII(s string) string {
 // UnsafeRedirect  does not convert relative paths to absolute paths, or clean paths
 // like Redirect does.
 func UnsafeRedirect(w http.ResponseWriter, r *http.Request, newPath string, redirectStatus int) {
-	w.Header().Set("Location", UnsafeRedirectPath(r, newPath))
+	w.Header().Set("Location", PathWithOptionalURLQuery(newPath, r.URL.RawQuery))
 	w.WriteHeader(redirectStatus)
 }
 
-func UnsafeRedirectPath(r *http.Request, newPath string) string {
-	if q := r.URL.RawQuery; q != "" {
-		newPath += "?" + q
+func PathWithOptionalURLQuery(newPath string, rawQuery string) string {
+	if strings.ContainsRune(newPath, '?') {
+		return  newPath
+	}
+	if rawQuery != "" {
+		newPath += "?" + rawQuery
 	}
 	return newPath
 }

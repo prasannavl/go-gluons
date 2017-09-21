@@ -43,7 +43,7 @@ func OnPrefixStrippedAndRedirectToSlash(prefix string, h mchain.Handler, w http.
 			RedirectHandler(
 				// Use a local redirect, since there's no way to ensure the
 				// path isn't modified arbitrarily in order to reconstruct it
-				UnsafeRedirectPath(r, "./"),
+				PathWithOptionalURLQuery("./", r.URL.RawQuery),
 				http.StatusMovedPermanently).ServeHTTP(w, r)
 			return true, nil
 		}

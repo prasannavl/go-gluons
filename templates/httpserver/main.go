@@ -49,7 +49,7 @@ func initFlags(env *EnvFlags) {
 	flag.BoolVar(&env.Insecure, "insecure", false, "disable tls")
 	flag.BoolVar(&env.UseSelfSigned, "self-signed", false, "use randomly generated self signed certificate for tls")
 	flag.StringVar(&env.RedirectorAddr, "redirector", "", "a http redirector address as 'host:port' to enable")
-	flag.StringArrayVar(&env.Hosts, "hosts", nil, "'host:port' items to enable hosts filter")
+	flag.StringArrayVar(&env.Hosts, "hosts", nil, "hostnames (used for ssl certificates and optionally for filtering)")
 	flag.StringVar(&env.WebRoot, "root", "", "web root path")
 	flag.StringVar(&env.CertCacheDir, "cert-dir", "", "the auto-tls certificate cache dir")
 
