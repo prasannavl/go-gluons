@@ -41,7 +41,7 @@ func initFlags(env *EnvFlags) {
 	flag.BoolVar(&env.DisplayVersion, "version", false, "display the version and exit")
 	flag.CountVarP(&env.Verbosity, "verbose", "v", "verbosity level")
 	flag.StringVarP(&env.Addr, "address", "a", "localhost:8000", "the 'host:port' for the service to listen on")
-	flag.StringVar(&env.DiagAddr, "dapi-address", "localhost:9090", "the 'host:port' for diagnostics api")
+	flag.StringVar(&env.DiagAddr, "dapi-address", "", "the 'host:port' for diagnostics api")
 	flag.StringVar(&env.LogFile, "log", "", "the log file destination")
 	flag.BoolVar(&env.LogDisabled, "no-log", false, "disable the logger")
 	flag.BoolVarP(&env.LogHumanize, "log-humanize", "h", false, "humanize log messages")
