@@ -18,17 +18,12 @@ func NewURLProxy(target *url.URL) *httputil.ReverseProxy {
 	return &httputil.ReverseProxy{Director: director}
 }
 
-func NewHostProxy(host string, forceHttp bool, replaceHostHeader bool) *httputil.ReverseProxy {
+func NewHostProxy(host string, forceHttp bool) *httputil.ReverseProxy {
 	director := func(req *http.Request) {
 		if forceHttp {
 			req.URL.Scheme = "http"
 		}
-		if replaceHostHeader {
-			req.Header.Set("X-Forwarded-Host", req.Host)
-			req.Host = host
-		} else {
-			req.URL.Host = req.Host
-		}
+		req.URL.Host = req.Host
 		clearUserAgentIfNotValid(req)
 	}
 	return &httputil.ReverseProxy{Director: director}

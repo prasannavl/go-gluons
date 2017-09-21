@@ -18,7 +18,7 @@ func SetupPprof(mux *http.ServeMux) {
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 }
 
-func Create(addr string, path string) httpservice.Service {
+func Create(addr string) httpservice.Service {
 	return CreateWithConfigure(addr, nil)
 }
 
