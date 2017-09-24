@@ -34,6 +34,7 @@ setup_vars() {
 }
 
 start() {
+    init
     stop
     echo "> run: start"
     mkdir -p "$LOGS_DIR" "$CERT_CACHE_DIR"
@@ -51,6 +52,7 @@ start() {
 }
 
 stop() {
+    init
     try_exit_or_kill "$BIN_NAME" 90
 }
 
