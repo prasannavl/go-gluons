@@ -74,7 +74,7 @@ try_exit_or_kill() {
     echo "> run: stopped: $1"
 }
 
-if [ -z "$@" ]; then
+if [ $# -lt 1 ]; then
     run
 else 
     "$@"
