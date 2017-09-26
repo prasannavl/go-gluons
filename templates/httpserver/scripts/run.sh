@@ -53,7 +53,8 @@ start() {
 
 stop() {
     init
-    try_exit_or_kill "$BIN_NAME" 90
+    local wait_time=${1:-90}
+    try_exit_or_kill "$BIN_NAME" $wait_time
 }
 
 try_exit_or_kill() {
