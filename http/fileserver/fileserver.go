@@ -155,7 +155,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 type condResult int
 
 const (
-	condNone  condResult = iota
+	condNone condResult = iota
 	condTrue
 	condFalse
 )
@@ -226,12 +226,12 @@ func newErr(statusHint int, kind fileServerErrorKind, message string, pathname s
 	}
 	return &Err{
 		httperror.HttpErr{
-			goerror.CodedErr{
-				goerror.GoErr{msg, cause},
-				statusHint,
+			CodedErr: goerror.CodedErr{
+				GoErr:   goerror.GoErr{Msg: msg, Inner: cause},
+				ErrCode: statusHint,
 			},
-			true,
-			nil,
+			Stop:       true,
+			HeadersMap: nil,
 		},
 		kind,
 		pathname,
