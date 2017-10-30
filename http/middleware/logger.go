@@ -119,7 +119,7 @@ var sizeSuffixes = [...]string{"b", "kb", "mb", "gb"}
 func sizeString(size int) string {
 	index := 0
 	i := 1000
-	for ; size > 1; i *= 1000 {
+	for ; size > i; i *= 1000 {
 		index++
 	}
 	maxLen := len(sizeSuffixes)
