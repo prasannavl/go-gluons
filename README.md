@@ -1,6 +1,6 @@
 # go-gluons
 
-A grab bag of personal go packages that holds things together
+A grab bag of personal go packages, and templates to hold things together
 
 Stable gluons:
 
