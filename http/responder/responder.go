@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prasannavl/goerror/httperror"
+	"github.com/prasannavl/go-errors/httperror"
 	"github.com/unrolled/render"
 )
 

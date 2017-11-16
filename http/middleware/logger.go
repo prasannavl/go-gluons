@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prasannavl/go-errors/errutils"
 	"github.com/prasannavl/go-gluons/ansicode"
 	"github.com/prasannavl/go-gluons/http/reqcontext"
 	"github.com/prasannavl/go-gluons/http/writer"
 	"github.com/prasannavl/go-gluons/log"
-	"github.com/prasannavl/goerror/errutils"
 	"github.com/prasannavl/mchain"
 )
 

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prasannavl/goerror/errutils"
+	"github.com/prasannavl/go-errors/errutils"
 
-	"github.com/prasannavl/goerror/httperror"
+	"github.com/prasannavl/go-errors/httperror"
 	"github.com/prasannavl/mchain"
 
 	"github.com/prasannavl/go-gluons/log"

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prasannavl/go-errors"
+	"github.com/prasannavl/go-errors/httperror"
 	"github.com/prasannavl/go-gluons/http/handlerutils"
-	"github.com/prasannavl/goerror"
-	"github.com/prasannavl/goerror/httperror"
 )
 
 func HttpFileServer(root http.FileSystem) http.Handler {
@@ -226,8 +226,8 @@ func newErr(statusHint int, kind fileServerErrorKind, message string, pathname s
 	}
 	return &Err{
 		httperror.HttpErr{
-			CodedErr: goerror.CodedErr{
-				GoErr:   goerror.GoErr{Msg: msg, Inner: cause},
+			CodedErr: errors.CodedErr{
+				GoErr:   errors.GoErr{Msg: msg, Inner: cause},
 				ErrCode: statusHint,
 			},
 			Stop:       true,

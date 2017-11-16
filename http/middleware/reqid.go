@@ -8,7 +8,7 @@ import (
 	"github.com/prasannavl/mchain"
 
 	"github.com/google/uuid"
-	"github.com/prasannavl/goerror/httperror"
+	"github.com/prasannavl/go-errors/httperror"
 )
 
 const RequestIDHeaderKey = "X-Request-Id"
